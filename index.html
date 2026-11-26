@@ -36,7 +36,7 @@
     header span { font-size: 0.85rem; opacity: 0.9; }
 
     /* Container */
-    .container { max-width: 1040px; width: 100%; margin: 24px auto; padding: 0 16px; flex: 1; }
+    .container { max-width: 1080px; width: 100%; margin: 24px auto; padding: 0 16px; flex: 1; }
     .card {
       background: var(--card);
       border-radius: 12px;
@@ -126,8 +126,8 @@
       border: 1px solid #fecaca;
     }
 
-    .exam-grid { display: grid; grid-template-columns: 1fr 270px; gap: 18px; align-items: start; }
-    @media (max-width: 820px) { .exam-grid { grid-template-columns: 1fr; } }
+    .exam-grid { display: grid; grid-template-columns: 1fr 290px; gap: 18px; align-items: start; }
+    @media (max-width: 840px) { .exam-grid { grid-template-columns: 1fr; } }
 
     .question-header {
       display: flex;
@@ -137,16 +137,12 @@
       border-bottom: 1px solid #e2e8f0;
       margin-bottom: 16px;
     }
-    .passage {
-      background: #f8fafc;
-      border-left: 4px solid var(--primary);
-      padding: 12px 14px;
-      border-radius: 6px;
-      margin-bottom: 16px;
-      font-size: 0.94rem;
-      line-height: 1.6;
+    .question-text {
+      font-size: 1.02rem;
+      line-height: 1.65;
+      margin-bottom: 18px;
+      white-space: pre-line;
     }
-    .question-text { font-size: 1.03rem; line-height: 1.6; margin-bottom: 18px; font-weight: 500; }
 
     .options { display: flex; flex-direction: column; gap: 10px; }
     .option-item {
@@ -186,15 +182,15 @@
     }
 
     /* Number Grid */
-    .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+    .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; max-height: 360px; overflow-y: auto; padding-right: 2px; }
     .num-btn {
-      padding: 8px 0;
-      border-radius: 8px;
+      padding: 7px 0;
+      border-radius: 7px;
       border: 1px solid var(--border);
       background: #fff;
       font-weight: 600;
       cursor: pointer;
-      font-size: 0.88rem;
+      font-size: 0.84rem;
     }
     .num-btn.active { border: 2px solid var(--primary); }
     .num-btn.answered { background: var(--success); color: #fff; border-color: var(--success); }
@@ -256,8 +252,8 @@
       <div class="form-group">
         <label for="sessionSelect">Pilih Sesi Ujian</label>
         <select id="sessionSelect">
-          <option value="literasi">Sesi 1 — Literasi Membaca (15 Menit)</option>
-          <option value="numerasi">Sesi 2 — Numerasi (15 Menit)</option>
+          <option value="literasi">Sesi 1 — Literasi Membaca (40 Soal - 60 Menit)</option>
+          <option value="numerasi">Sesi 2 — Numerasi (40 Soal - 60 Menit)</option>
         </select>
       </div>
 
@@ -276,17 +272,16 @@
           <span class="badge" id="sessionTitle">SESI 1: LITERASI</span>
           <div style="font-size:0.88rem; color:var(--muted); margin-top:4px;" id="participantInfo"></div>
         </div>
-        <div class="timer-box">Sisa Waktu: <span id="timerDisplay">15:00</span></div>
+        <div class="timer-box">Sisa Waktu: <span id="timerDisplay">60:00</span></div>
       </div>
 
       <div class="exam-grid">
         <div class="card">
           <div class="question-header">
             <strong id="questionNumberTitle">Soal No. 1</strong>
-            <span style="font-size:0.85rem; color:var(--muted);" id="progressText">Terjawab: 0 / 10</span>
+            <span style="font-size:0.85rem; color:var(--muted);" id="progressText">Terjawab: 0 / 40</span>
           </div>
 
-          <div id="passageBox" class="passage hidden"></div>
           <div id="questionText" class="question-text"></div>
           <div id="optionsContainer" class="options"></div>
 
@@ -340,463 +335,1043 @@
   </footer>
 
   <script>
-    // ================= KONFIGURASI TOKEN, SERVER REKAP & BANK SOAL =================
-    const VALID_TOKEN = "TKA2026";
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzLZmGknDSVknEPMYdClNqj_j9EnrJJIhosluoqOu54oit4_55h8vLhZWDD2naucRB1/exec";
+  // ================= KONFIGURASI TOKEN, SERVER REKAP & WAKTU =================
+  const VALID_TOKEN = "TKA2026";
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzLZmGknDSVknEPMYdClNqj_j9EnrJJIhosluoqOu54oit4_55h8vLhZWDD2naucRB1/exec";
+  const DURASI_LITERASI_MENIT = 60;
+  const DURASI_NUMERASI_MENIT = 60;
 
-    const BANK_SOAL = {
-      literasi: {
-        title: "Sesi 1 — Literasi Membaca",
-        durationMinutes: 15,
-        questions: [
-          {
-            passage: "Taman bacaan di sudut desa itu awalnya hanya berupa rak kayu sederhana di teras rumah warga. Namun, setiap sore anak-anak berdatangan untuk meminjam buku cerita maupun ensiklopedia bergambar. Kini, warga bergotong royong menambah koleksi buku dan menyediakan sudut diskusi akhir pekan.",
-            q: "Gagasan utama paragraf tersebut adalah ...",
-            options: [
-              "Perkembangan taman bacaan desa berkat antusiasme anak-anak dan gotong royong warga",
-              "Jenis-jenis buku ensiklopedia bergambar yang paling disukai anak-anak desa",
-              "Cara membuat rak kayu sederhana untuk menyimpan koleksi buku di teras rumah",
-              "Jadwal kegiatan diskusi akhir pekan yang wajib diikuti seluruh warga desa"
-            ],
-            answer: 0
-          },
-          {
-            passage: "Penggunaan gawai secara berlebihan sebelum tidur dapat menghambat produksi hormon melatonin yang mengatur siklus tidur alami tubuh. Akibatnya, seseorang menjadi sulit terlelap dan merasa lelah saat bangun di pagi hari.",
-            q: "Berdasarkan teks tersebut, dampak langsung terhambatnya hormon melatonin adalah ...",
-            options: [
-              "Meningkatnya daya konsentrasi saat belajar di malam hari",
-              "Terganggunya siklus tidur alami sehingga sulit terlelap",
-              "Berkurangnya kebutuhan waktu istirahat harian tubuh",
-              "Meningkatnya energi tubuh pada keesokan harinya"
-            ],
-            answer: 1
-          },
-          {
-            passage: "Hutan bakau di pesisir pantai tidak hanya menjadi habitat berbagai jenis kepiting dan ikan kecil, tetapi juga berperan penting memecah gelombang laut sehingga mencegah abrasi daratan.",
-            q: "Makna kata 'abrasi' pada paragraf di atas adalah ...",
-            options: [
-              "Pencemaran air laut akibat limbah rumah tangga",
-              "Pengikisan daratan pantai oleh tenaga gelombang laut",
-              "Penanaman kembali hutan yang gundul di wilayah pesisir",
-              "Perpindahan habitat ikan dari laut dalam ke muara sungai"
-            ],
-            answer: 1
-          },
-          {
-            passage: "Meskipun hujan turun sangat deras sejak pagi, Raka tetap berangkat menuju sekolah lebih awal karena ia bertugas menyiapkan perlengkapan upacara bendera.",
-            q: "Sikap tokoh Raka yang tergambar dalam kalimat tersebut adalah ...",
-            options: [
-              "Ceroboh dan tergesa-gesa",
-              "Disiplin dan bertanggung jawab",
-              "Pendiam dan mudah menyerah",
-              "Sombong dan suka pamer"
-            ],
-            answer: 1
-          },
-          {
-            passage: "Sampah organik rumah tangga seperti sisa sayuran dan kulit buah dapat diolah menjadi pupuk kompos. Selain mengurangi volume sampah yang dibuang ke tempat pembuangan akhir, kompos juga menyuburkan tanaman pekarangan.",
-            q: "Simpulan yang tepat dari bacaan tersebut adalah ...",
-            options: [
-              "Semua jenis sampah rumah tangga harus dibakar agar tidak menumpuk",
-              "Pupuk kompos hanya bisa dibuat menggunakan kulit buah-buahan tertentu",
-              "Pengolahan sampah organik menjadi kompos bermanfaat bagi lingkungan dan tanaman",
-              "Tempat pembuangan akhir sudah tidak menerima sampah sayuran dari warga"
-            ],
-            answer: 2
-          },
-          {
-            passage: "Dalam sebuah poster layanan masyarakat tertulis: 'Satu Pohon Hari Ini, Sejuta Napas untuk Masa Depan.'",
-            q: "Tujuan utama poster tersebut adalah ...",
-            options: [
-              "Menjual bibit pohon keras kepada masyarakat perkotaan",
-              "Mengajak masyarakat menanam pohon demi kelestarian udara di masa depan",
-              "Melarang warga menebang semua jenis tanaman di halaman rumah",
-              "Menjelaskan proses fotosintesis tumbuhan secara ilmiah"
-            ],
-            answer: 1
-          },
-          {
-            passage: "Ani membaca dua artikel tentang energi surya. Artikel A membahas murahnya biaya perawatan panel surya dalam jangka panjang. Artikel B menyoroti tingginya biaya pemasangan awal panel surya bagi rumah tangga.",
-            q: "Perbedaan fokus kedua artikel tersebut terletak pada ...",
-            options: [
-              "Artikel A membahas keuntungan jangka panjang, sedangkan Artikel B membahas kendala biaya awal",
-              "Artikel A menolak energi terbarukan, sedangkan Artikel B mendukung penggunaan batu bara",
-              "Artikel A ditujukan untuk industri besar, sedangkan Artikel B untuk sekolah",
-              "Artikel A dan Artikel B sama-sama membahas cara merakit panel surya sendiri"
-            ],
-            answer: 0
-          },
-          {
-            passage: "Perhatikan kalimat berikut: 'Para hadirin sekalian dimohon untuk segera memasuki ruang aula.'",
-            q: "Perbaikan kalimat tersebut agar menjadi kalimat efektif adalah ...",
-            options: [
-              "Para hadirin dimohon untuk segera memasuki ruang aula.",
-              "Semua para hadirin sekalian dimohon memasuki ruang aula.",
-              "Hadirin sekalian dimohon untuk segera masuk ke dalam aula.",
-              "Para hadirin-hadirin dimohon segera memasuki ruang aula."
-            ],
-            answer: 0
-          },
-          {
-            passage: "Setiap pagi, Pak Darmo menyusuri pematang sawah sambil memeriksa saluran irigasi. Baginya, air yang mengalir lancar adalah kunci keberhasilan panen padi para petani di desanya.",
-            q: "Latar tempat dan waktu pada kutipan cerita tersebut adalah ...",
-            options: [
-              "Di tepi sungai pada siang hari",
-              "Di pematang sawah pada pagi hari",
-              "Di balai desa pada sore hari",
-              "Di halaman rumah pada malam hari"
-            ],
-            answer: 1
-          },
-          {
-            passage: "Literasi digital tidak hanya berarti mampu mengoperasikan gawai, tetapi juga mencakup kecakapan menyaring kebenaran informasi sebelum membagikannya kepada orang lain.",
-            q: "Pernyataan yang sesuai dengan isi teks adalah ...",
-            options: [
-              "Orang yang memiliki gawai canggih pasti memiliki literasi digital yang tinggi",
-              "Informasi di internet boleh langsung dibagikan tanpa perlu diperiksa",
-              "Kemampuan memverifikasi informasi merupakan bagian penting dari literasi digital",
-              "Literasi digital hanya diperlukan oleh pelajar di tingkat perguruan tinggi"
-            ],
-            answer: 2
-          }
-        ]
-      },
-      numerasi: {
-        title: "Sesi 2 — Numerasi",
-        durationMinutes: 15,
-        questions: [
-          {
-            passage: "",
-            q: "Hasil dari $24 + (-15) \\times 3$ adalah ...",
-            options: ["-21", "27", "-69", "69"],
-            answer: 0
-          },
-          {
-            passage: "Sebuah toko buku memberikan diskon 20% untuk semua jenis novel. Dina membeli sebuah novel dengan harga label Rp85.000,00.",
-            q: "Berapa rupiah yang harus dibayar Dina setelah mendapat diskon?",
-            options: ["Rp65.000,00", "Rp68.000,00", "Rp70.000,00", "Rp72.500,00"],
-            answer: 1
-          },
-          {
-            passage: "",
-            q: "Perbandingan kelereng Budi dan Anton adalah $3 : 5$. Jika jumlah kelereng mereka berdua adalah $64$ butir, selisih kelereng mereka adalah ...",
-            options: ["8 butir", "12 butir", "16 butir", "24 butir"],
-            answer: 2
-          },
-          {
-            passage: "Sebuah taman berbentuk persegi panjang memiliki ukuran panjang $18\\text{ m}$ dan lebar $12\\text{ m}$. Di sekeliling taman akan dipasang lampu dengan jarak antar-lampu $3\\text{ m}$.",
-            q: "Banyak lampu yang dibutuhkan di sekeliling taman tersebut adalah ...",
-            options: ["18 buah", "20 buah", "24 buah", "30 buah"],
-            answer: 1
-          },
-          {
-            passage: "",
-            q: "Diketahui pola bilangan: $4, 7, 10, 13, \\dots$ Suku ke-12 dari pola bilangan tersebut adalah ...",
-            options: ["34", "37", "40", "43"],
-            answer: 1
-          },
-          {
-            passage: "Sebuah bak mandi berbentuk balok berukuran panjang $100\\text{ cm}$, lebar $60\\text{ cm}$, dan tinggi $50\\text{ cm}$.",
-            q: "Jika bak tersebut diisi air hingga penuh, berapa liter volume air di dalamnya? ($1\\text{ liter} = 1.000\\text{ cm}^3$)",
-            options: ["210 liter", "250 liter", "300 liter", "350 liter"],
-            answer: 2
-          },
-          {
-            passage: "Nilai ulangan Matematika 5 siswa adalah: $75, 80, 85, 90, 80$.",
-            q: "Rata-rata (mean) nilai kelima siswa tersebut adalah ...",
-            options: ["80", "82", "84", "85"],
-            answer: 1
-          },
-          {
-            passage: "Sebuah mobil menempuh jarak $135\\text{ km}$ dengan kecepatan rata-rata $45\\text{ km/jam}$.",
-            q: "Jika mobil berangkat pukul $07.30$, pada pukul berapa mobil tiba di tujuan?",
-            options: ["09.30", "10.00", "10.30", "11.00"],
-            answer: 2
-          },
-          {
-            passage: "",
-            q: "Nilai $x$ yang memenuhi persamaan $3x - 7 = 14$ adalah ...",
-            options: ["5", "6", "7", "8"],
-            answer: 2
-          },
-          {
-            passage: "Di dalam sebuah kotak terdapat $5$ bola merah, $3$ bola biru, dan $2$ bola kuning.",
-            q: "Jika diambil satu bola secara acak, peluang terambilnya bola berwarna biru adalah ...",
-            options: ["0,2", "0,3", "0,4", "0,5"],
-            answer: 1
-          }
-        ]
-      }
-    };
+  // =========================================================================
+  // TEMPAT INPUT 40 SOAL LITERASI (Gunakan format teks biasa di dalam tanda ` `)
+  // Pisahkan antar soal dengan tanda ===
+  // =========================================================================
+  const teksSoalLiterasi = `
+Bacalah teks berikut!
+"Ekosistem hutan mangrove di wilayah pesisir memiliki peran ganda. Secara ekologis, akar mangrove yang rapat mampu meredam energi gelombang laut sehingga mencegah abrasi pantai. Secara ekonomis, kawasan ini menjadi tempat pemijahan berbagai jenis ikan, udang, dan kepiting yang menjadi sumber mata pencaharian nelayan setempat."
 
-    // ================= STATE APLIKASI =================
-    let currentState = {
-      name: "",
-      studentClass: "",
-      sessionKey: "literasi",
+Gagasan utama paragraf tersebut adalah...
+A. Cara nelayan menangkap ikan dan udang di sekitar pantai
+B. Manfaat ekologis dan ekonomis hutan mangrove di wilayah pesisir
+C. Proses terjadinya abrasi pantai akibat gelombang laut yang besar
+D. Jenis-jenis akar tumbuhan yang hidup di kawasan pesisir pantai
+KUNCI: B
+===
+Perhatikan kutipan teks berita berikut!
+"Dinas Lingkungan Hidup Kabupaten Bandung Barat menggelar aksi bersih-bersih aliran Sungai Citarum pada Minggu (15/11/2026). Kegiatan ini melibatkan ratusan pelajar, komunitas peduli lingkungan, serta warga sekitar untuk mengurangi penumpukan sampah plastik menjelang puncak musim hujan."
+
+Unsur "mengapa" (why) dalam kutipan berita tersebut adalah...
+A. Melibatkan ratusan pelajar dan komunitas peduli lingkungan
+B. Digelar oleh Dinas Lingkungan Hidup Kabupaten Bandung Barat
+C. Dilaksanakan pada hari Minggu di aliran Sungai Citarum
+D. Untuk mengurangi penumpukan sampah plastik menjelang puncak musim hujan
+KUNCI: D
+===
+Bacalah penggalan cerpen berikut!
+"Setiap pagi sebelum fajar menyingsing, Raka sudah mengayuh sepeda tuanya menyusuri jalanan berbatu menuju pasar induk. Peluh yang membasahi pelipisnya tak pernah menyurutkan niatnya untuk membantu ibunya berjualan sayur demi membiayai sekolah adiknya."
+
+Watak tokoh Raka berdasarkan kutipan cerpen tersebut adalah...
+A. Pemalu dan pendiam
+B. Pekerja keras dan penyayang keluarga
+C. Keras kepala dan mudah tersinggung
+D. Sombong dan suka pamer
+KUNCI: B
+===
+Cermati kalimat berikut!
+"Para hadirin sekalian dimohon berdiri sejenak untuk menyanyikan lagu kebangsaan Indonesia Raya."
+
+Alasan ketidakefektifan kalimat tersebut adalah...
+A. Penggunaan kata 'dimohon' yang tidak baku
+B. Penggunaan kata 'para' dan 'sekalian' secara bersamaan (pleonasme)
+C. Tidak memiliki subjek yang jelas dalam kalimat
+D. Kata 'sejenak' seharusnya diletakkan di awal kalimat
+KUNCI: B
+===
+Perhatikan kutipan teks prosedur berikut!
+1) Masukkan beras yang telah dicuci bersih ke dalam panci penanak nasi.
+2) Tambahkan air secukupnya sesuai takaran ruas jari.
+3) Tekan tombol 'Cook' pada penanak nasi dan tunggu hingga matang.
+4) Colokkan kabel penanak nasi ke stopkontak listrik.
+
+Urutan langkah menanak nasi yang tepat adalah...
+A. 1 - 2 - 4 - 3
+B. 1 - 4 - 2 - 3
+C. 2 - 1 - 4 - 3
+D. 4 - 1 - 3 - 2
+KUNCI: A
+===
+Bacalah puisi berikut!
+"Daun-daun kering menari dihembus angin senja
+Menyapu jejak langkah yang kian memudar
+Langit jingga perlahan menutup tirai hari
+Menyisakan sunyi di sudut beranda"
+
+Majas yang dominan digunakan pada larik pertama puisi tersebut adalah...
+A. Hiperbola
+B. Personifikasi
+C. Metafora
+D. Simile
+KUNCI: B
+===
+Manakah kelompok kata berikut yang seluruhnya merupakan kata baku sesuai EYD V?
+A. Apotek, izin, sistem, nasihat
+B. Apotik, ijin, sistim, nasehat
+C. Apotek, ijin, sistem, nasehat
+D. Apotik, izin, sistim, nasihat
+KUNCI: A
+===
+Bacalah teks eksposisi berikut!
+"Membaca buku secara rutin terbukti meningkatkan daya konsentrasi dan memperkaya kosakata seseorang. Berbeda dengan menggulir layar media sosial yang cenderung menyajikan informasi singkat dan terpotong-potong, membaca buku melatih otak untuk memahami alur pemikiran yang utuh dan mendalam."
+
+Simpulan yang tepat berdasarkan paragraf tersebut adalah...
+A. Media sosial tidak memiliki manfaat bagi perkembangan otak pelajar
+B. Membaca buku jauh lebih murah dibandingkan membeli paket data internet
+C. Membaca buku melatih konsentrasi dan pemahaman mendalam dibandingkan media sosial
+D. Semua pelajar wajib meninggalkan media sosial dan hanya membaca buku cetak
+KUNCI: C
+===
+Perhatikan kalimat berikut!
+"Meskipun hujan turun sangat deras, .... pertandingan sepak bola antar-SMP tetap dilanjutkan hingga babak kedua berakhir."
+
+Konjungsi yang tepat untuk melengkapi bagian rumpang tersebut adalah...
+A. tetapi
+B. namun
+C. melainkan
+D. sehingga
+KUNCI: B
+===
+Bacalah kutipan fabel berikut!
+"Kancil mengamati arus sungai yang deras dari balik semak. Ia tahu tak mungkin berenang menyeberanginya sendirian. Melihat sekelompok buaya berjemur di tepi sungai, muncul ide cerdik di benaknya untuk menghitung jumlah mereka sebagai jembatan penyeberangan."
+
+Tahapan alur pada kutipan fabel tersebut adalah...
+A. Orientasi (pengenalan)
+B. Komplikasi (munculnya masalah)
+C. Resolusi (penyelesaian)
+D. Koda (amanat akhir)
+KUNCI: B
+===
+Perhatikan penulisan judul karangan berikut!
+"strategi meningkatkan minat baca siswa di era digital"
+
+Penulisan judul tersebut yang sesuai dengan kaidah huruf kapital adalah...
+A. Strategi Meningkatkan Minat Baca Siswa Di Era Digital
+B. Strategi Meningkatkan Minat Baca Siswa di Era Digital
+C. Strategi meningkatkan minat baca siswa di era digital
+D. Strategi Meningkatkan Minat Baca Siswa di era digital
+KUNCI: B
+===
+Bacalah teks tanggapan berikut!
+"Penggunaan gawai di lingkungan sekolah memang memudahkan siswa mencari referensi belajar secara cepat. Namun, tanpa pengawasan yang ketat, gawai justru dapat mengalihkan fokus siswa saat kegiatan belajar mengajar berlangsung."
+
+Kalimat kedua pada paragraf tersebut menyatakan...
+A. Pujian terhadap kemajuan teknologi
+B. Sanggahan atau catatan kritis
+C. Ajakan untuk melarang penggunaan gawai
+D. Kesimpulan akhir pembahasan
+KUNCI: B
+===
+Cermati kalimat tidak efektif berikut!
+"Bagi seluruh peserta lomba harap berkumpul di aula utama pukul 08.00 WIB."
+
+Perbaikan yang tepat agar kalimat tersebut menjadi efektif adalah...
+A. Menghilangkan kata 'Bagi' di awal kalimat
+B. Mengganti kata 'harap' menjadi 'diharapkan agar supaya'
+C. Menambahkan kata 'untuk' setelah kata 'lomba'
+D. Mengubah kata 'di aula utama' menjadi 'ke aula utama'
+KUNCI: A
+===
+Bacalah kutipan biografi berikut!
+"B.J. Habibie dikenal sebagai ilmuwan dirgantara kelas dunia yang menciptakan teori keretakan pesawat terbang atau 'Habibie Factor'. Sejak muda, ia memiliki kedisiplinan tinggi dan rasa ingin tahu yang besar terhadap ilmu pengetahuan dan teknologi."
+
+Keistimewaan tokoh B.J. Habibie berdasarkan kutipan tersebut adalah...
+A. Menjadi presiden pertama Republik Indonesia
+B. Menciptakan teori keretakan pesawat terbang (Habibie Factor)
+C. Mendirikan sekolah penerbangan pertama di Asia Tenggara
+D. Memperoleh beasiswa kuliah di seluruh negara Eropa
+KUNCI: B
+===
+Perhatikan kutipan iklan layanan masyarakat berikut!
+"Satu pohon yang kamu tanam hari ini adalah sejuta napas bagi generasi esok. Mari hijaukan bumi kita!"
+
+Maksud kalimat pertama pada iklan tersebut adalah...
+A. Menanam satu pohon akan menghasilkan uang jutaan rupiah
+B. Pohon yang ditanam sekarang sangat bermanfaat bagi kelangsungan hidup masa depan
+C. Generasi masa depan tidak akan mampu menanam pohon sendiri
+D. Setiap orang dilarang menebang pohon di lingkungan rumah
+KUNCI: B
+===
+Bacalah paragraf berikut!
+"Sampah organik rumah tangga seperti sisa sayuran dan kulit buah dapat diolah menjadi pupuk kompos. Proses pengomposan ini tidak hanya mengurangi volume sampah yang dibuang ke tempat pembuangan akhir, tetapi juga menghasilkan nutrisi alami yang menyuburkan tanaman di pekarangan."
+
+Makna istilah "organik" pada paragraf tersebut adalah...
+A. Berasal dari bahan kimia buatan pabrik
+B. Berasal dari sisa makhluk hidup yang mudah terurai alami
+C. Benda padat yang tidak dapat didaur ulang
+D. Limbah berbahaya yang mencemari air tanah
+KUNCI: B
+===
+Perhatikan pantun berikut!
+"Pergi ke pasar membeli talas,
+Jangan lupa membeli semangka.
+Jika ingin menjadi siswa cerdas,
+Rajinlah belajar dan gemar membaca."
+
+Amanat yang terkandung dalam pantun tersebut adalah...
+A. Kita harus selalu berbelanja buah-buahan di pasar tradisional
+B. Membeli talas dan semangka dapat meningkatkan kecerdasan otak
+C. Siswa yang ingin cerdas harus rajin belajar dan gemar membaca
+D. Membaca buku sebaiknya dilakukan setelah pulang dari pasar
+KUNCI: C
+===
+Bacalah teks persuasi berikut!
+"Sarapan pagi sering kali diabaikan oleh pelajar dengan alasan terburu-buru berangkat ke sekolah. Padahal, tubuh membutuhkan asupan energi setelah berpuasa sepanjang malam. Tanpa sarapan, konsentrasi belajar di kelas akan menurun drastis. Oleh karena itu, biasakanlah sarapan bergizi sebelum memulai aktivitas belajar."
+
+Kalimat ajakan pada paragraf tersebut ditandai dengan penggunaan kata...
+A. Sering kali
+B. Padahal
+C. Oleh karena itu, biasakanlah
+D. Tanpa sarapan
+KUNCI: C
+===
+Cermati kalimat berikut!
+"Ibu membeli: bayam, wortel, kentang, dan tomat di pasar."
+
+Kesalahan penggunaan tanda baca pada kalimat tersebut adalah...
+A. Tanda koma (,) sebelum kata 'dan' seharusnya dihilangkan
+B. Tanda titik dua (:) tidak diperlukan karena perincian merupakan objek langsung verba transitif
+C. Tanda titik (.) di akhir kalimat seharusnya diganti tanda seru (!)
+D. Kata 'pasar' seharusnya diawali huruf kapital
+KUNCI: B
+===
+Bacalah kutipan hikayat berikut!
+"Maka tersebutlah perkataan seorang raja yang amat adil lagi bijaksana di negeri Antah Berantah. Segala rakyatnya hidup makmur dan sentosa tiada suatu kekurangan apa pun."
+
+Ciri kebahasaan sastra lama yang tampak pada kutipan tersebut adalah...
+A. Menggunakan bahasa gaul anak muda
+B. Menggunakan kata arkais seperti 'maka tersebutlah' dan 'tiada'
+C. Menggunakan istilah ilmiah modern
+D. Menggunakan sudut pandang orang pertama 'aku'
+KUNCI: B
+===
+Perhatikan data buku berikut!
+Judul buku: Laskar Pelangi
+Penulis: Andrea Hirata
+Penerbit: Bentang Pustaka
+Tahun terbit: 2005
+Kota terbit: Yogyakarta
+
+Penulisan daftar pustaka yang benar berdasarkan data tersebut adalah...
+A. Andrea Hirata. 2005. Laskar Pelangi. Yogyakarta: Bentang Pustaka.
+B. Hirata, Andrea. 2005. Laskar Pelangi. Yogyakarta: Bentang Pustaka.
+C. Hirata, Andrea. Laskar Pelangi. 2005. Bentang Pustaka: Yogyakarta.
+D. Andrea, Hirata. 2005. Laskar Pelangi. Bentang Pustaka: Yogyakarta.
+KUNCI: B
+===
+Bacalah dua kutipan teks berikut!
+Teks 1: "Gempa bumi tektonik berkekuatan 5,4 magnitudo mengguncang wilayah pesisir selatan Jawa Barat dini hari tadi. Tidak ada potensi tsunami akibat peristiwa ini."
+Teks 2: "Hujan deras disertai angin kencang menyebabkan beberapa pohon tumbang di jalan protokol sehingga arus lalu lintas sempat tersendat selama dua jam."
+
+Persamaan topik kedua teks berita tersebut adalah...
+A. Peristiwa bencana alam dan gangguan lingkungan
+B. Dampak kemacetan lalu lintas di jalan raya
+C. Peringatan dini potensi gelombang tsunami
+D. Upaya pemerintah memperbaiki jalan protokol
+KUNCI: A
+===
+Bacalah kutipan drama berikut!
+Dina : (Sambil merapikan tumpukan buku) "Apakah kamu sudah siap untuk presentasi kelompok kita besok, Rio?"
+Rio : (Menghela napas panjang) "Sebenarnya aku masih gugup, Din. Aku takut salah bicara di depan kelas."
+Dina : "Tenang saja, kita sudah berlatih bersama. Aku yakin kamu pasti bisa!"
+
+Suasana yang tergambar dalam kutipan dialog drama tersebut adalah...
+A. Tegang dan penuh permusuhan
+B. Sedih dan berduka cita
+C. Saling menyemangati di tengah rasa cemas
+D. Riang gembira merayakan kemenangan
+KUNCI: C
+===
+Perhatikan kalimat berikut!
+"Penelitian itu dilakukan untuk mengetahui pengaruh cahaya matahari terhadap pertumbuhan tanaman kacang hijau."
+
+Kata dasar dari kata berimbuhan 'pertumbuhan' adalah...
+A. Tumbuh
+B. Pertumbuh
+C. Tumbuhan
+D. Menumbuh
+KUNCI: A
+===
+Bacalah paragraf berikut!
+"Teknologi kecerdasan buatan (AI) kini mulai dimanfaatkan dalam dunia pendidikan sebagai asisten belajar digital. Siswa dapat berdiskusi, mencari ringkasan materi, hingga berlatih soal secara interaktif. Meskipun demikian, peran guru sebagai pembimbing karakter dan nalar kritis tetap tidak tergantikan oleh mesin."
+
+Ide pendukung yang terdapat pada kalimat kedua adalah...
+A. Teknologi AI mulai dimanfaatkan dalam dunia pendidikan
+B. Manfaat AI bagi siswa untuk berdiskusi, meringkas materi, dan berlatih soal
+C. Peran guru dalam membimbing karakter tidak dapat digantikan oleh mesin
+D. Mesin kecerdasan buatan akan menggantikan seluruh tugas guru di sekolah
+KUNCI: B
+===
+Manakah kalimat berikut yang menggunakan kata berimbuhan me- dengan makna 'melakukan pekerjaan dengan alat'?
+A. Adik menangis karena balonnya meletus.
+B. Ayah menggergaji papan kayu untuk membuat rak buku.
+C. Air sungai meluap setelah hujan turun semalaman.
+D. Daun-daun mangga mulai menguning di halaman rumah.
+KUNCI: B
+===
+Bacalah kutipan teks laporan hasil observasi berikut!
+"Komodo (Varanus komodoensis) merupakan spesies kadal terbesar di dunia yang hidup di Pulau Komodo, Rinca, Flores, Gili Motang, dan Gili Dasami di Provinsi Nusa Tenggara Timur. Reptil purba ini memiliki panjang tubuh yang dapat mencapai 3 meter dengan berat sekitar 70 kilogram."
+
+Struktur teks laporan hasil observasi pada kutipan tersebut termasuk bagian...
+A. Definisi umum
+B. Deskripsi manfaat
+C. Simpulan akhir
+D. Argumentasi
+KUNCI: A
+===
+Perhatikan kalimat berikut!
+"Buku novel yang dipinjam oleh Rina kemarin sudah dikembalikan ke perpustakaan."
+
+Perbaikan agar kalimat tersebut tidak mubazir (hemat kata) adalah...
+A. Menghilangkan kata 'Buku' karena novel sudah pasti buku
+B. Menghilangkan kata 'sudah' sebelum kata 'dikembalikan'
+C. Mengganti kata 'oleh' menjadi 'daripada'
+D. Menghilangkan kata 'kemarin' di tengah kalimat
+KUNCI: A
+===
+Bacalah kutipan surat dinas berikut!
+"Dengan hormat,
+Sehubungan dengan akan dilaksanakannya kegiatan Perkemahan Sabtu Minggu (Persami), kami mengundang Bapak/Ibu Wali Murid untuk hadir pada:
+hari, tanggal : Sabtu, 28 November 2026
+waktu : Pukul 08.00 WIB s.d. selesai
+tempat : Aula SMP Negeri 1 Cipeundeuy"
+
+Kesalahan penulisan ejaan pada kutipan surat dinas tersebut adalah...
+A. Penulisan 'Dengan hormat,' menggunakan tanda koma
+B. Kata 'hari', 'waktu', dan 'tempat' diawali huruf kecil setelah tanda titik dua
+C. Penulisan 'Bapak/Ibu' menggunakan huruf kapital
+D. Penulisan 'WIB' menggunakan huruf kapital semua
+KUNCI: B
+===
+Bacalah paragraf berikut!
+"Banjir bandang yang melanda desa itu menyisakan duka mendalam. Banyak warga kehilangan tempat tinggal dan harta benda. Pemerintah daerah segera mendirikan posko pengungsian serta menyalurkan bantuan logistik berupa makanan, selimut, dan obat-obatan."
+
+Hubungan antarkalimat pertama dan ketiga pada paragraf tersebut adalah...
+A. Pertentangan
+B. Sebab-akibat (peristiwa dan penanganan)
+C. Perbandingan
+D. Kronologis waktu masa lalu
+KUNCI: B
+===
+Perhatikan ungkapan berikut!
+"Meskipun telah meraih juara pertama tingkat provinsi, Nisa tetap rendah hati dan mau membantu teman-temannya belajar."
+
+Makna ungkapan 'rendah hati' pada kalimat tersebut adalah...
+A. Merasa minder dan tidak percaya diri
+B. Tidak sombong dan bersikap santun
+C. Mudah menyerah saat menghadapi kesulitan
+D. Suka menyendiri dan menghindari keramaian
+KUNCI: B
+===
+Bacalah kutipan ulasan buku berikut!
+"Buku ini menyajikan panduan menulis puisi dengan bahasa yang sangat ringan dan mudah dipahami oleh pemula. Sayangnya, ilustrasi gambar di dalamnya masih dicetak hitam putih sehingga terkesan kurang menarik secara visual."
+
+Bagian yang menunjukkan kelemahan buku pada kutipan ulasan tersebut adalah...
+A. Bahasa yang digunakan sangat ringan dan mudah dipahami
+B. Panduan menulis puisi sangat cocok bagi penulis pemula
+C. Ilustrasi gambar dicetak hitam putih sehingga kurang menarik secara visual
+D. Buku ini diterbitkan oleh penerbit nasional ternama
+KUNCI: C
+===
+Perhatikan kalimat berikut!
+"Dia bekerja keras dari pagi hingga malam .... dapat melunasi biaya pengobatan orang tuanya."
+
+Kata penghubung tujuan yang tepat untuk melengkapi kalimat tersebut adalah...
+A. supaya
+B. padahal
+C. seandainya
+D. sedangkan
+KUNCI: A
+===
+Bacalah kutipan teks pidato berikut!
+"Hadirin yang saya hormati, menjaga kebersihan lingkungan sekolah bukan hanya tanggung jawab petugas kebersihan, melainkan tanggung jawab kita bersama. Mari kita mulai dari hal kecil, yakni membuang sampah pada tempatnya dan mengurangi penggunaan plastik sekali pakai."
+
+Tujuan utama kutipan pidato tersebut adalah...
+A. Melaporkan jadwal piket kebersihan kelas kepada kepala sekolah
+B. Mengajak warga sekolah untuk bersama-sama menjaga kebersihan lingkungan
+C. Mengkritik kinerja petugas kebersihan di lingkungan sekolah
+D. Menjelaskan cara mendaur ulang sampah plastik menjadi kerajinan
+KUNCI: B
+===
+Manakah pasangan kata berikut yang merupakan antonim (lawan kata)?
+A. Abstrak >< Konkret
+B. Efektif >< Efisien
+C. Inovasi >< Pembaruan
+D. Prosedur >< Tata cara
+KUNCI: A
+===
+Bacalah kutipan cerita inspiratif berikut!
+"Kegagalan dalam mengikuti seleksi olimpiade tahun lalu tidak membuat Dimas putus asa. Ia justru mencatat setiap kelemahannya, menyusun jadwal belajar baru, dan berlatih soal setiap malam hingga akhirnya berhasil meraih medali emas tahun ini."
+
+Pesan moral yang dapat dipetik dari kisah Dimas adalah...
+A. Keberhasilan hanya dapat diraih oleh siswa yang berbakat sejak lahir
+B. Kegagalan adalah akhir dari segalanya sehingga tidak perlu dicoba lagi
+C. Kegagalan dapat dijadikan pelajaran dan motivasi untuk meraih keberhasilan
+D. Mengikuti olimpiade membutuhkan biaya yang sangat besar
+KUNCI: C
+===
+Perhatikan penulisan alamat surat berikut!
+Yth. Bapak Kepala SMP Negeri 1 Cipeundeuy
+di Tempat
+
+Perbaikan penulisan alamat surat tersebut yang paling tepat sesuai PUEBI/EYD V adalah...
+A. Kepada Yth. Bapak Kepala SMP Negeri 1 Cipeundeuy
+B. Yth. Kepala SMP Negeri 1 Cipeundeuy
+C. Yth: Kepala SMP Negeri 1 Cipeundeuy
+D. Kepada Kepala SMP Negeri 1 Cipeundeuy
+KUNCI: B
+===
+Bacalah paragraf berikut!
+"Indonesia merupakan negara kepulauan terbesar di dunia yang memiliki lebih dari 17.000 pulau. Letak geografisnya yang berada di antara dua benua dan dua samudra menjadikan Indonesia memiliki keanekaragaman hayati serta kekayaan budaya yang sangat melimpah."
+
+Jenis paragraf tersebut berdasarkan letak kalimat utamanya adalah...
+A. Deduktif (kalimat utama di awal paragraf)
+B. Induktif (kalimat utama di akhir paragraf)
+C. Campuran (kalimat utama di awal dan akhir)
+D. Ineratif (kalimat utama di tengah paragraf)
+KUNCI: A
+===
+Cermati kalimat berikut!
+"Para siswa-siswa kelas IX sedang mengikuti simulasi ujian berbasis komputer di laboratorium."
+
+Bentuk baku dari kalimat tersebut adalah...
+A. Para siswa kelas IX sedang mengikuti simulasi ujian berbasis komputer di laboratorium.
+B. Siswa-siswa para kelas IX sedang mengikuti simulasi ujian berbasis komputer di laboratorium.
+C. Para siswa kelas IX sedang mengikuti daripada simulasi ujian berbasis komputer.
+D. Seluruh para siswa kelas IX sedang mengikuti simulasi ujian berbasis komputer.
+KUNCI: A
+===
+Bacalah kutipan puisi berikut!
+"Buku adalah jendela dunia
+Membuka cakrawala tanpa batas ruang dan waktu
+Dari aksara yang sederhana
+Lahir ribuan gagasan yang mengubah peradaban"
+
+Tema yang diangkat dalam kutipan puisi tersebut adalah...
+A. Keindahan alam semesta
+B. Pentingnya membaca dan literasi bagi peradaban
+C. Perjuangan pahlawan merebut kemerdekaan
+D. Persahabatan sejati di bangku sekolah
+KUNCI: B
+`;
+
+  // =========================================================================
+  // TEMPAT INPUT 40 SOAL NUMERASI (Gunakan format yang sama, pisahkan dengan ===)
+  // =========================================================================
+  const teksSoalNumerasi = `
+Suhu di dalam sebuah lemari pendingin mula-mula -4°C. Setelah listrik padam selama 3 jam, suhu di dalam lemari pendingin naik 3°C setiap jam. Suhu di dalam lemari pendingin tersebut sekarang adalah...
+A. -13°C
+B. -5°C
+C. 5°C
+D. 9°C
+KUNCI: C
+===
+Dalam sebuah kompetisi matematika yang terdiri dari 40 soal, aturan penilaiannya adalah: jawaban benar diberi skor 4, jawaban salah diberi skor -2, dan tidak dijawab diberi skor -1. Jika Rina menjawab 34 soal dengan benar dan 4 soal salah, total skor yang diperoleh Rina adalah...
+A. 124
+B. 126
+C. 128
+D. 136
+KUNCI: B
+===
+Pak Budi memiliki sebidang tanah seluas 1.200 m². Sebanyak 1/3 bagian ditanami jagung, 2/5 bagian ditanami singkong, dan sisanya dibuat kolam ikan. Luas tanah yang dibuat kolam ikan adalah...
+A. 320 m²
+B. 400 m²
+C. 480 m²
+D. 880 m²
+KUNCI: A
+===
+Perbandingan uang saku Andi dan Beni adalah 3 : 5. Jika selisih uang saku mereka adalah Rp16.000,00, jumlah uang saku Andi dan Beni adalah...
+A. Rp24.000,00
+B. Rp40.000,00
+C. Rp64.000,00
+D. Rp80.000,00
+KUNCI: C
+===
+Sebuah proyek pembangunan gedung sekolah direncanakan selesai dalam waktu 30 hari oleh 15 orang pekerja. Setelah bekerja selama 6 hari, pekerjaan terpaksa dihentikan selama 4 hari karena cuaca buruk. Agar proyek selesai tepat waktu sesuai rencana awal, jumlah pekerja tambahan yang diperlukan adalah...
+A. 3 orang
+B. 5 orang
+C. 18 orang
+D. 20 orang
+KUNCI: A
+===
+Jarak antara kota A dan kota B pada peta adalah 6 cm. Jika skala yang digunakan pada peta tersebut adalah 1 : 1.500.000, jarak sebenarnya kedua kota tersebut adalah...
+A. 9 km
+B. 25 km
+C. 90 km
+D. 900 km
+KUNCI: C
+===
+Sebuah toko memberikan diskon 25% untuk semua jenis tas sekolah. Jika harga sebelum diskon sebuah tas adalah Rp180.000,00, uang yang harus dibayarkan pembeli untuk membeli tas tersebut adalah...
+A. Rp45.000,00
+B. Rp135.000,00
+C. Rp145.000,00
+D. Rp155.000,00
+KUNCI: B
+===
+Bu Sari menabung di bank sebesar Rp2.000.000,00 dengan suku bunga tunggal 6% per tahun. Setelah 8 bulan, jumlah seluruh tabungan Bu Sari menjadi...
+A. Rp2.060.000,00
+B. Rp2.080.000,00
+C. Rp2.120.000,00
+D. Rp2.160.000,00
+KUNCI: B
+===
+Hasil dari 2⁻³ + 4⁻² adalah...
+A. 1/8
+B. 3/16
+C. 1/4
+D. 3/8
+KUNCI: B
+===
+Bentuk sederhana dari √75 + 2√12 - √27 adalah...
+A. 4√3
+B. 6√3
+C. 8√3
+D. 12√3
+KUNCI: B
+===
+Perhatikan pola bilangan berikut: 4, 9, 14, 19, 24, ... Suku ke-25 dari barisan bilangan tersebut adalah...
+A. 119
+B. 124
+C. 129
+D. 134
+KUNCI: B
+===
+Sebuah bakteri membelah diri menjadi 2 setiap 20 menit. Jika pada pukul 08.00 terdapat 15 bakteri, jumlah bakteri pada pukul 10.00 adalah...
+A. 180 bakteri
+B. 480 bakteri
+C. 960 bakteri
+D. 1.920 bakteri
+KUNCI: C
+===
+Dalam gedung pertunjukan disusun kursi dengan baris paling depan terdiri dari 12 kursi, baris kedua 16 kursi, baris ketiga 20 kursi, dan seterusnya selalu bertambah 4 kursi. Jika di dalam gedung terdapat 10 baris kursi, kapasitas seluruh kursi di gedung tersebut adalah...
+A. 240 kursi
+B. 280 kursi
+C. 300 kursi
+D. 320 kursi
+KUNCI: C
+===
+Bentuk sederhana dari 3(2x - 4y) - 2(x - 5y) adalah...
+A. 4x - 22y
+B. 4x - 2y
+C. 4x + 2y
+D. 8x - 2y
+KUNCI: B
+===
+Diketahui persamaan linear satu variabel: 3(2x - 1) = 4x + 9. Nilai dari x + 5 adalah...
+A. 6
+B. 9
+C. 11
+D. 14
+KUNCI: C
+===
+Keliling sebuah taman berbentuk persegi panjang adalah 54 meter. Jika selisih panjang dan lebar taman tersebut adalah 5 meter, luas taman tersebut adalah...
+A. 166 m²
+B. 176 m²
+C. 186 m²
+D. 196 m²
+KUNCI: B
+===
+Harga 3 buku tulis dan 2 pensil adalah Rp19.000,00, sedangkan harga 2 buku tulis dan 4 pensil adalah Rp18.000,00. Harga 1 buku tulis dan 1 pensil adalah...
+A. Rp6.500,00
+B. Rp7.000,00
+C. Rp7.500,00
+D. Rp8.000,00
+KUNCI: B
+===
+Di sebuah tempat parkir terdapat 45 kendaraan yang terdiri dari sepeda motor dan mobil. Jumlah seluruh roda kendaraan tersebut adalah 124 roda. Jika tarif parkir sepeda motor Rp2.000,00 dan mobil Rp5.000,00, total pendapatan tukang parkir saat itu adalah...
+A. Rp135.000,00
+B. Rp141.000,00
+C. Rp150.000,00
+D. Rp174.000,00
+KUNCI: B
+===
+Diketahui fungsi f(x) = 3x - 7. Jika f(a) = 14, nilai a adalah...
+A. 5
+B. 7
+C. 9
+D. 35
+KUNCI: B
+===
+Tarif taksi online menetapkan biaya buka pintu sebesar Rp8.000,00 dan tarif per kilometer sebesar Rp3.500,00. Jika penumpang menempuh jarak 12 km, biaya yang harus dibayarkan adalah...
+A. Rp42.000,00
+B. Rp48.000,00
+C. Rp50.000,00
+D. Rp54.000,00
+KUNCI: C
+===
+Gradien garis yang melalui titik A(2, -3) dan titik B(6, 5) adalah...
+A. -2
+B. -1/2
+C. 1/2
+D. 2
+KUNCI: D
+===
+Akar-akar persamaan kuadrat x² - 5x - 14 = 0 adalah...
+A. x = -7 atau x = 2
+B. x = 7 atau x = -2
+C. x = 7 atau x = 2
+D. x = -7 atau x = -2
+KUNCI: B
+===
+Sebuah tangga sepanjang 10 meter disandarkan pada dinding tembok. Jika jarak ujung bawah tangga ke kaki tembok adalah 6 meter, tinggi dinding yang dicapai ujung atas tangga adalah...
+A. 4 meter
+B. 7 meter
+C. 8 meter
+D. 12 meter
+KUNCI: C
+===
+Sebuah kapal berlayar ke arah timur sejauh 15 km, kemudian berbelok ke arah utara sejauh 20 km. Jarak terdekat kapal sekarang dari titik keberangkatan semula adalah...
+A. 25 km
+B. 30 km
+C. 35 km
+D. 45 km
+KUNCI: A
+===
+Besar sudut pelurus dari sudut 68° adalah...
+A. 22°
+B. 32°
+C. 112°
+D. 122°
+KUNCI: C
+===
+Sebuah roda sepeda memiliki jari-jari 35 cm. Jika roda tersebut berputar sebanyak 200 kali, panjang lintasan yang ditempuh sepeda tersebut adalah... (π = 22/7)
+A. 220 meter
+B. 440 meter
+C. 660 meter
+D. 880 meter
+KUNCI: B
+===
+Sebuah taman berbentuk lingkaran dengan diameter 28 meter. Di sekeliling taman akan ditanami pohon pucuk merah dengan jarak antar pohon 4 meter. Banyak pohon yang dibutuhkan adalah... (π = 22/7)
+A. 11 pohon
+B. 22 pohon
+C. 44 pohon
+D. 88 pohon
+KUNCI: B
+===
+Sebuah akuarium berbentuk balok berukuran panjang 80 cm, lebar 40 cm, dan tinggi 50 cm. Akuarium tersebut diisi air sebanyak 3/4 bagian. Volume air di dalam akuarium adalah...
+A. 120 liter
+B. 140 liter
+C. 160 liter
+D. 180 liter
+KUNCI: A
+===
+Sebuah kaleng susu berbentuk tabung memiliki diameter alas 14 cm dan tinggi 20 cm. Luas permukaan seluruh kaleng susu tersebut adalah... (π = 22/7)
+A. 880 cm²
+B. 1.034 cm²
+C. 1.188 cm²
+D. 3.080 cm²
+KUNCI: C
+===
+Sebuah topi ulang tahun berbentuk kerucut memiliki jari-jari alas 7 cm dan tinggi 24 cm. Luas karton minimal yang diperlukan untuk membuat 1 buah topi tersebut tanpa alas adalah... (π = 22/7)
+A. 528 cm²
+B. 550 cm²
+C. 704 cm²
+D. 1.232 cm²
+KUNCI: B
+===
+Sebuah tugu peringatan memiliki tinggi bayangan 12 meter saat disinari matahari. Pada saat yang sama, tiang bendera setinggi 3 meter memiliki bayangan sepanjang 4 meter. Tinggi tugu peringatan sebenarnya adalah...
+A. 8 meter
+B. 9 meter
+C. 15 meter
+D. 16 meter
+KUNCI: B
+===
+Titik P(-3, 5) dicerminkan terhadap sumbu X, kemudian hasilnya digeser (ditranslasi) oleh T(4, -2). Koordinat bayangan akhir titik P adalah...
+A. (1, -7)
+B. (1, 3)
+C. (7, -7)
+D. (-7, -3)
+KUNCI: A
+===
+Data nilai ulangan harian Matematika 10 siswa adalah sebagai berikut: 75, 80, 65, 90, 85, 70, 80, 95, 75, 85. Rata-rata (mean) nilai ulangan tersebut adalah...
+A. 78
+B. 80
+C. 82
+D. 84
+KUNCI: B
+===
+Perhatikan data berat badan (dalam kg) 11 pemain sepak bola berikut: 62, 65, 60, 68, 64, 61, 66, 63, 67, 65, 69. Median (nilai tengah) dari data tersebut adalah...
+A. 64 kg
+B. 65 kg
+C. 66 kg
+D. 67 kg
+KUNCI: B
+===
+Rata-rata nilai ulangan 15 siswa adalah 76. Setelah nilai 5 siswa susulan digabungkan, rata-rata kelas menjadi 78. Rata-rata nilai dari 5 siswa susulan tersebut adalah...
+A. 80
+B. 82
+C. 84
+D. 86
+KUNCI: C
+===
+Diagram lingkaran menunjukkan kegemaran 200 siswa SMP terhadap ekstrakurikuler: Pramuka 40%, Paskibra 25%, PMR 20%, dan sisanya Jurnalistik. Banyak siswa yang gemar ekstrakurikuler Jurnalistik adalah...
+A. 15 siswa
+B. 25 siswa
+C. 30 siswa
+D. 35 siswa
+KUNCI: C
+===
+Dalam sebuah kantong terdapat 6 kelereng merah, 9 kelereng biru, dan 5 kelereng hijau. Jika diambil satu kelereng secara acak, peluang terambilnya kelereng berwarna biru adalah...
+A. 0,25
+B. 0,30
+C. 0,45
+D. 0,60
+KUNCI: C
+===
+Dua buah dadu homogen dilempar undi secara bersamaan satu kali. Peluang munculnya mata dadu berjumlah 9 adalah...
+A. 1/12
+B. 1/9
+C. 1/6
+D. 1/4
+KUNCI: B
+===
+Tiga keping uang logam dilempar secara bersamaan sebanyak 80 kali. Frekuensi harapan munculnya 2 gambar dan 1 angka adalah...
+A. 10 kali
+B. 20 kali
+C. 30 kali
+D. 40 kali
+KUNCI: C
+===
+Dari 36 siswa kelas IX, 20 siswa gemar membaca novel, 18 siswa gemar membaca komik, dan 6 siswa tidak gemar keduanya. Jika dipilih satu siswa secara acak, peluang terpilihnya siswa yang gemar membaca keduanya adalah...
+A. 2/9
+B. 1/6
+C. 1/4
+D. 1/3
+KUNCI: A
+`;
+
+  // ================= PARSER TEKS SOAL OTOMATIS =================
+  function parseSoal(rawText) {
+    const blocks = rawText.trim().split(/\n===\n|\n===|===\n/);
+    const hasil = [];
+    const mapHuruf = { A: 0, B: 1, C: 2, D: 3 };
+
+    blocks.forEach(block => {
+      const lines = block.trim().split("\n");
+      if (lines.length < 6) return;
+
+      let kunciIdx = 0;
+      const optA = [], optB = [], optC = [], optD = [];
+      const qLines = [];
+      let mode = "Q";
+
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (/^KUNCI\s*:\s*[A-D]/i.test(trimmed)) {
+          const huruf = trimmed.split(":")[1].trim().toUpperCase().charAt(0);
+          kunciIdx = mapHuruf[huruf] ?? 0;
+          mode = "DONE";
+        } else if (/^A\.\s*/.test(trimmed)) {
+          mode = "A";
+          optA.push(trimmed.replace(/^A\.\s*/, ""));
+        } else if (/^B\.\s*/.test(trimmed)) {
+          mode = "B";
+          optB.push(trimmed.replace(/^B\.\s*/, ""));
+        } else if (/^C\.\s*/.test(trimmed)) {
+          mode = "C";
+          optC.push(trimmed.replace(/^C\.\s*/, ""));
+        } else if (/^D\.\s*/.test(trimmed)) {
+          mode = "D";
+          optD.push(trimmed.replace(/^D\.\s*/, ""));
+        } else {
+          if (mode === "Q") qLines.push(line);
+          else if (mode === "A") optA.push(trimmed);
+          else if (mode === "B") optB.push(trimmed);
+          else if (mode === "C") optC.push(trimmed);
+          else if (mode === "D") optD.push(trimmed);
+        }
+      });
+
+      hasil.push({
+        q: qLines.join("\n").trim(),
+        options: [
+          optA.join(" ").trim(),
+          optB.join(" ").trim(),
+          optC.join(" ").trim(),
+          optD.join(" ").trim()
+        ],
+        answer: kunciIdx
+      });
+    });
+
+    return hasil;
+  }
+
+  const BANK_SOAL = {
+    literasi: {
+      title: "Sesi 1 — Literasi Membaca",
+      durationMinutes: DURASI_LITERASI_MENIT,
+      questions: parseSoal(teksSoalLiterasi)
+    },
+    numerasi: {
+      title: "Sesi 2 — Numerasi",
+      durationMinutes: DURASI_NUMERASI_MENIT,
+      questions: parseSoal(teksSoalNumerasi)
+    }
+  };
+
+  // ================= STATE & LOGIKA UJIAN =================
+  let currentState = {
+    name: "",
+    studentClass: "",
+    sessionKey: "literasi",
+    currentIndex: 0,
+    answers: [],
+    doubts: [],
+    timeLeft: 0,
+    timerInterval: null
+  };
+
+  function startExam() {
+    const name = document.getElementById("studentName").value.trim();
+    const sClass = document.getElementById("studentClass").value.trim();
+    const sessionKey = document.getElementById("sessionSelect").value;
+    const token = document.getElementById("tokenInput").value.trim().toUpperCase();
+    const alertBox = document.getElementById("loginAlert");
+
+    if (!name || !sClass) {
+      alertBox.textContent = "Harap isi Nama Lengkap dan Kelas / Nomor Peserta terlebih dahulu.";
+      alertBox.classList.remove("hidden");
+      return;
+    }
+
+    if (token !== VALID_TOKEN) {
+      alertBox.textContent = "Token tidak valid! Gunakan token: " + VALID_TOKEN;
+      alertBox.classList.remove("hidden");
+      return;
+    }
+
+    alertBox.classList.add("hidden");
+
+    const sessionData = BANK_SOAL[sessionKey];
+    const totalQ = sessionData.questions.length;
+
+    currentState = {
+      name,
+      studentClass: sClass,
+      sessionKey,
       currentIndex: 0,
-      answers: [],
-      doubts: [],
-      timeLeft: 0,
+      answers: new Array(totalQ).fill(null),
+      doubts: new Array(totalQ).fill(false),
+      timeLeft: sessionData.durationMinutes * 60,
       timerInterval: null
     };
 
-    function formatMathText(str) {
-      return str
-        .replace(/\$([^$]+)\$/g, (_, expr) => {
-          return expr
-            .replace(/\\times/g, "×")
-            .replace(/\\dots/g, "...")
-            .replace(/\\text\{([^}]+)\}/g, "$1")
-            .replace(/\^2/g, "²")
-            .replace(/\^3/g, "³");
-        });
-    }
+    document.getElementById("loginView").classList.add("hidden");
+    document.getElementById("resultView").classList.add("hidden");
+    document.getElementById("examView").classList.remove("hidden");
 
-    function startExam() {
-      const name = document.getElementById("studentName").value.trim();
-      const sClass = document.getElementById("studentClass").value.trim();
-      const sessionKey = document.getElementById("sessionSelect").value;
-      const token = document.getElementById("tokenInput").value.trim().toUpperCase();
-      const alertBox = document.getElementById("loginAlert");
+    document.getElementById("headerUser").textContent = name + " (" + sClass + ")";
+    document.getElementById("sessionTitle").textContent = sessionData.title.toUpperCase();
+    document.getElementById("participantInfo").textContent = "Peserta: " + name + " | Kelas: " + sClass;
 
-      if (!name || !sClass) {
-        alertBox.textContent = "Harap isi Nama Lengkap dan Kelas / Nomor Peserta terlebih dahulu.";
-        alertBox.classList.remove("hidden");
-        return;
-      }
+    renderNumberGrid();
+    renderQuestion();
+    startTimer();
+  }
 
-      if (token !== VALID_TOKEN) {
-        alertBox.textContent = "Token tidak valid! Gunakan token: " + VALID_TOKEN;
-        alertBox.classList.remove("hidden");
-        return;
-      }
-
-      alertBox.classList.add("hidden");
-
-      const sessionData = BANK_SOAL[sessionKey];
-      const totalQ = sessionData.questions.length;
-
-      currentState = {
-        name,
-        studentClass: sClass,
-        sessionKey,
-        currentIndex: 0,
-        answers: new Array(totalQ).fill(null),
-        doubts: new Array(totalQ).fill(false),
-        timeLeft: sessionData.durationMinutes * 60,
-        timerInterval: null
-      };
-
-      document.getElementById("loginView").classList.add("hidden");
-      document.getElementById("resultView").classList.add("hidden");
-      document.getElementById("examView").classList.remove("hidden");
-
-      document.getElementById("headerUser").textContent = name + " (" + sClass + ")";
-      document.getElementById("sessionTitle").textContent = sessionData.title.toUpperCase();
-      document.getElementById("participantInfo").textContent = "Peserta: " + name + " | Kelas: " + sClass;
-
-      renderNumberGrid();
-      renderQuestion();
-      startTimer();
-    }
-
-    function startTimer() {
-      clearInterval(currentState.timerInterval);
+  function startTimer() {
+    clearInterval(currentState.timerInterval);
+    updateTimerDisplay();
+    currentState.timerInterval = setInterval(() => {
+      currentState.timeLeft--;
       updateTimerDisplay();
-      currentState.timerInterval = setInterval(() => {
-        currentState.timeLeft--;
-        updateTimerDisplay();
-        if (currentState.timeLeft <= 0) {
-          clearInterval(currentState.timerInterval);
-          alert("Waktu pengerjaan sesi ini telah habis. Jawaban Anda akan dikumpulkan otomatis.");
-          finishExam();
-        }
-      }, 1000);
-    }
-
-    function updateTimerDisplay() {
-      const m = Math.floor(currentState.timeLeft / 60);
-      const s = currentState.timeLeft % 60;
-      document.getElementById("timerDisplay").textContent =
-        String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
-    }
-
-    function renderQuestion() {
-      const sessionData = BANK_SOAL[currentState.sessionKey];
-      const idx = currentState.currentIndex;
-      const item = sessionData.questions[idx];
-      const totalQ = sessionData.questions.length;
-
-      document.getElementById("questionNumberTitle").textContent = `Soal No. ${idx + 1} dari ${totalQ}`;
-
-      const answeredCount = currentState.answers.filter(a => a !== null).length;
-      document.getElementById("progressText").textContent = `Terjawab: ${answeredCount} / ${totalQ}`;
-
-      const passageBox = document.getElementById("passageBox");
-      if (item.passage && item.passage.trim() !== "") {
-        passageBox.innerHTML = formatMathText(item.passage);
-        passageBox.classList.remove("hidden");
-      } else {
-        passageBox.classList.add("hidden");
-      }
-
-      document.getElementById("questionText").innerHTML = formatMathText(item.q);
-
-      const optionsContainer = document.getElementById("optionsContainer");
-      optionsContainer.innerHTML = "";
-      const letters = ["A", "B", "C", "D"];
-
-      item.options.forEach((optText, optIdx) => {
-        const div = document.createElement("div");
-        div.className = "option-item" + (currentState.answers[idx] === optIdx ? " selected" : "");
-        div.onclick = () => selectOption(optIdx);
-        div.innerHTML = `
-          <div class="opt-letter">${letters[optIdx]}</div>
-          <div style="line-height:1.5;">${formatMathText(optText)}</div>
-        `;
-        optionsContainer.appendChild(div);
-      });
-
-      document.getElementById("prevBtn").disabled = idx === 0;
-      if (idx === totalQ - 1) {
-        document.getElementById("nextBtn").classList.add("hidden");
-        document.getElementById("finishBtn").classList.remove("hidden");
-      } else {
-        document.getElementById("nextBtn").classList.remove("hidden");
-        document.getElementById("finishBtn").classList.add("hidden");
-      }
-
-      updateNumberGrid();
-    }
-
-    function selectOption(optIdx) {
-      currentState.answers[currentState.currentIndex] = optIdx;
-      renderQuestion();
-    }
-
-    function toggleDoubt() {
-      const idx = currentState.currentIndex;
-      currentState.doubts[idx] = !currentState.doubts[idx];
-      updateNumberGrid();
-    }
-
-    function prevQuestion() {
-      if (currentState.currentIndex > 0) {
-        currentState.currentIndex--;
-        renderQuestion();
-      }
-    }
-
-    function nextQuestion() {
-      const totalQ = BANK_SOAL[currentState.sessionKey].questions.length;
-      if (currentState.currentIndex < totalQ - 1) {
-        currentState.currentIndex++;
-        renderQuestion();
-      }
-    }
-
-    function jumpToQuestion(idx) {
-      currentState.currentIndex = idx;
-      renderQuestion();
-    }
-
-    function renderNumberGrid() {
-      const totalQ = BANK_SOAL[currentState.sessionKey].questions.length;
-      const grid = document.getElementById("numberGrid");
-      grid.innerHTML = "";
-      for (let i = 0; i < totalQ; i++) {
-        const btn = document.createElement("button");
-        btn.className = "num-btn";
-        btn.textContent = i + 1;
-        btn.onclick = () => jumpToQuestion(i);
-        grid.appendChild(btn);
-      }
-      updateNumberGrid();
-    }
-
-    function updateNumberGrid() {
-      const buttons = document.getElementById("numberGrid").children;
-      for (let i = 0; i < buttons.length; i++) {
-        buttons[i].className = "num-btn";
-        if (i === currentState.currentIndex) buttons[i].classList.add("active");
-        if (currentState.doubts[i]) {
-          buttons[i].classList.add("doubt");
-        } else if (currentState.answers[i] !== null) {
-          buttons[i].classList.add("answered");
-        }
-      }
-    }
-
-    function confirmFinish() {
-      const unanswered = currentState.answers.filter(a => a === null).length;
-      const msg = unanswered > 0
-        ? `Masih ada ${unanswered} soal yang belum dijawab. Yakin ingin mengumpulkan sekarang?`
-        : "Semua soal sudah dijawab. Kumpulkan jawaban sekarang?";
-      if (confirm(msg)) {
+      if (currentState.timeLeft <= 0) {
+        clearInterval(currentState.timerInterval);
+        alert("Waktu pengerjaan sesi ini telah habis. Jawaban Anda akan dikumpulkan otomatis.");
         finishExam();
       }
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    const m = Math.floor(currentState.timeLeft / 60);
+    const s = currentState.timeLeft % 60;
+    document.getElementById("timerDisplay").textContent =
+      String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  function renderQuestion() {
+    const sessionData = BANK_SOAL[currentState.sessionKey];
+    const idx = currentState.currentIndex;
+    const item = sessionData.questions[idx];
+    const totalQ = sessionData.questions.length;
+
+    document.getElementById("questionNumberTitle").textContent = `Soal No. ${idx + 1} dari ${totalQ}`;
+
+    const answeredCount = currentState.answers.filter(a => a !== null).length;
+    document.getElementById("progressText").textContent = `Terjawab: ${answeredCount} / ${totalQ}`;
+
+    document.getElementById("questionText").textContent = item.q;
+
+    const optionsContainer = document.getElementById("optionsContainer");
+    optionsContainer.innerHTML = "";
+    const letters = ["A", "B", "C", "D"];
+
+    item.options.forEach((optText, optIdx) => {
+      const div = document.createElement("div");
+      div.className = "option-item" + (currentState.answers[idx] === optIdx ? " selected" : "");
+      div.onclick = () => selectOption(optIdx);
+
+      const letterEl = document.createElement("div");
+      letterEl.className = "opt-letter";
+      letterEl.textContent = letters[optIdx];
+
+      const textEl = document.createElement("div");
+      textEl.style.lineHeight = "1.5";
+      textEl.textContent = optText;
+
+      div.appendChild(letterEl);
+      div.appendChild(textEl);
+      optionsContainer.appendChild(div);
+    });
+
+    document.getElementById("prevBtn").disabled = idx === 0;
+    if (idx === totalQ - 1) {
+      document.getElementById("nextBtn").classList.add("hidden");
+      document.getElementById("finishBtn").classList.remove("hidden");
+    } else {
+      document.getElementById("nextBtn").classList.remove("hidden");
+      document.getElementById("finishBtn").classList.add("hidden");
     }
 
-    function finishExam() {
-      clearInterval(currentState.timerInterval);
-      const sessionData = BANK_SOAL[currentState.sessionKey];
-      const questions = sessionData.questions;
-      let correct = 0;
+    updateNumberGrid();
+  }
 
-      questions.forEach((q, idx) => {
-        if (currentState.answers[idx] === q.answer) correct++;
-      });
+  function selectOption(optIdx) {
+    currentState.answers[currentState.currentIndex] = optIdx;
+    renderQuestion();
+  }
 
-      const totalQ = questions.length;
-      const wrong = totalQ - correct;
-      const score = Math.round((correct / totalQ) * 100);
+  function toggleDoubt() {
+    const idx = currentState.currentIndex;
+    currentState.doubts[idx] = !currentState.doubts[idx];
+    updateNumberGrid();
+  }
 
-      document.getElementById("examView").classList.add("hidden");
-      document.getElementById("resultView").classList.remove("hidden");
+  function prevQuestion() {
+    if (currentState.currentIndex > 0) {
+      currentState.currentIndex--;
+      renderQuestion();
+    }
+  }
 
-      document.getElementById("resultSessionBadge").textContent = sessionData.title.toUpperCase();
-      document.getElementById("finalScore").textContent = score;
-      document.getElementById("resName").textContent = currentState.name;
-      document.getElementById("resClass").textContent = currentState.studentClass;
-      document.getElementById("resSession").textContent = sessionData.title;
-      document.getElementById("resCorrect").textContent = `${correct} dari ${totalQ} soal`;
-      document.getElementById("resWrong").textContent = `${wrong} soal`;
+  function nextQuestion() {
+    const totalQ = BANK_SOAL[currentState.sessionKey].questions.length;
+    if (currentState.currentIndex < totalQ - 1) {
+      currentState.currentIndex++;
+      renderQuestion();
+    }
+  }
 
-      const statusEl = document.getElementById("syncStatusText");
-      statusEl.textContent = "Mengirim rekap nilai ke server sekolah...";
-      statusEl.style.color = "#64748b";
+  function jumpToQuestion(idx) {
+    currentState.currentIndex = idx;
+    renderQuestion();
+  }
 
-      fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          name: currentState.name,
-          studentClass: currentState.studentClass,
-          session: sessionData.title,
-          correct: correct,
-          wrong: wrong,
-          score: score
-        })
+  function renderNumberGrid() {
+    const totalQ = BANK_SOAL[currentState.sessionKey].questions.length;
+    const grid = document.getElementById("numberGrid");
+    grid.innerHTML = "";
+    for (let i = 0; i < totalQ; i++) {
+      const btn = document.createElement("button");
+      btn.className = "num-btn";
+      btn.textContent = i + 1;
+      btn.onclick = () => jumpToQuestion(i);
+      grid.appendChild(btn);
+    }
+    updateNumberGrid();
+  }
+
+  function updateNumberGrid() {
+    const buttons = document.getElementById("numberGrid").children;
+    for (let i = 0; i < buttons.length; i++) {
+      buttons[i].className = "num-btn";
+      if (i === currentState.currentIndex) buttons[i].classList.add("active");
+      if (currentState.doubts[i]) {
+        buttons[i].classList.add("doubt");
+      } else if (currentState.answers[i] !== null) {
+        buttons[i].classList.add("answered");
+      }
+    }
+  }
+
+  function confirmFinish() {
+    const unanswered = currentState.answers.filter(a => a === null).length;
+    const msg = unanswered > 0
+      ? `Masih ada ${unanswered} soal yang belum dijawab. Yakin ingin mengumpulkan sekarang?`
+      : "Semua soal sudah dijawab. Kumpulkan jawaban sekarang?";
+    if (confirm(msg)) {
+      finishExam();
+    }
+  }
+
+  function finishExam() {
+    clearInterval(currentState.timerInterval);
+    const sessionData = BANK_SOAL[currentState.sessionKey];
+    const questions = sessionData.questions;
+    let correct = 0;
+
+    questions.forEach((q, idx) => {
+      if (currentState.answers[idx] === q.answer) correct++;
+    });
+
+    const totalQ = questions.length;
+    const wrong = totalQ - correct;
+    const score = Math.round((correct / totalQ) * 100);
+
+    document.getElementById("examView").classList.add("hidden");
+    document.getElementById("resultView").classList.remove("hidden");
+
+    document.getElementById("resultSessionBadge").textContent = sessionData.title.toUpperCase();
+    document.getElementById("finalScore").textContent = score;
+    document.getElementById("resName").textContent = currentState.name;
+    document.getElementById("resClass").textContent = currentState.studentClass;
+    document.getElementById("resSession").textContent = sessionData.title;
+    document.getElementById("resCorrect").textContent = `${correct} dari ${totalQ} soal`;
+    document.getElementById("resWrong").textContent = `${wrong} soal`;
+
+    const statusEl = document.getElementById("syncStatusText");
+    statusEl.textContent = "Mengirim rekap nilai ke server sekolah...";
+    statusEl.style.color = "#64748b";
+
+    fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        name: currentState.name,
+        studentClass: currentState.studentClass,
+        session: sessionData.title,
+        correct: correct,
+        wrong: wrong,
+        score: score
       })
-      .then(() => {
-        statusEl.textContent = "Rekap nilai berhasil tersimpan ke server sekolah.";
-        statusEl.style.color = "#15803d";
-      })
-      .catch(() => {
-        statusEl.textContent = "Selesai dikerjakan (koneksi server gagal, harap lapor pengawas).";
-        statusEl.style.color = "#b91c1c";
-      });
-    }
+    })
+    .then(() => {
+      statusEl.textContent = "Rekap nilai berhasil tersimpan ke server sekolah.";
+      statusEl.style.color = "#15803d";
+    })
+    .catch(() => {
+      statusEl.textContent = "Selesai dikerjakan (koneksi server gagal, harap lapor pengawas).";
+      statusEl.style.color = "#b91c1c";
+    });
+  }
 
-    function reloginNextSession() {
-      const select = document.getElementById("sessionSelect");
-      select.value = currentState.sessionKey === "literasi" ? "numerasi" : "literasi";
-      document.getElementById("tokenInput").value = "";
-      document.getElementById("resultView").classList.add("hidden");
-      document.getElementById("loginView").classList.remove("hidden");
-    }
+  function reloginNextSession() {
+    const select = document.getElementById("sessionSelect");
+    select.value = currentState.sessionKey === "literasi" ? "numerasi" : "literasi";
+    document.getElementById("tokenInput").value = "";
+    document.getElementById("resultView").classList.add("hidden");
+    document.getElementById("loginView").classList.remove("hidden");
+  }
   </script>
 </body>
 </html>
