@@ -120,7 +120,7 @@
       font-size: 1.05rem;
       font-weight: 700;
       color: var(--danger);
-      background: #fef2f2;
+      background: #fef2e2;
       padding: 6px 14px;
       border-radius: 8px;
       border: 1px solid #fecaca;
@@ -314,7 +314,7 @@
     <div id="resultView" class="card result-box hidden">
       <span class="badge" id="resultSessionBadge">HASIL UJIAN</span>
       <h2 style="margin-top:10px;">Ujian Selesai Dikerjakan</h2>
-      <p style="color:var(--muted); font-size:0.9rem;">Berikut adalah rekap hasil pengerjaan Anda pada sesi ini.</p>
+      <p style="color:var(--muted); font-size:0.9rem;" id="syncStatusText">Mengirim rekap nilai ke server sekolah...</p>
 
       <div class="score-circle">
         <strong id="finalScore">0</strong>
@@ -340,8 +340,9 @@
   </footer>
 
   <script>
-    // ================= KONFIGURASI TOKEN & BANK SOAL =================
+    // ================= KONFIGURASI TOKEN, SERVER REKAP & BANK SOAL =================
     const VALID_TOKEN = "TKA2026";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzLZmGknDSVknEPMYdClNqj_j9EnrJJIhosluoqOu54oit4_55h8vLhZWDD2naucRB1/exec";
 
     const BANK_SOAL = {
       literasi: {
@@ -540,7 +541,6 @@
       timerInterval: null
     };
 
-    // Bersihkan format LaTeX sederhana agar tampil rapi tanpa library eksternal
     function formatMathText(str) {
       return str
         .replace(/\$([^$]+)\$/g, (_, expr) => {
@@ -658,7 +658,6 @@
         optionsContainer.appendChild(div);
       });
 
-      // Tombol navigasi
       document.getElementById("prevBtn").disabled = idx === 0;
       if (idx === totalQ - 1) {
         document.getElementById("nextBtn").classList.add("hidden");
@@ -750,6 +749,7 @@
       });
 
       const totalQ = questions.length;
+      const wrong = totalQ - correct;
       const score = Math.round((correct / totalQ) * 100);
 
       document.getElementById("examView").classList.add("hidden");
@@ -761,11 +761,36 @@
       document.getElementById("resClass").textContent = currentState.studentClass;
       document.getElementById("resSession").textContent = sessionData.title;
       document.getElementById("resCorrect").textContent = `${correct} dari ${totalQ} soal`;
-      document.getElementById("resWrong").textContent = `${totalQ - correct} soal`;
+      document.getElementById("resWrong").textContent = `${wrong} soal`;
+
+      const statusEl = document.getElementById("syncStatusText");
+      statusEl.textContent = "Mengirim rekap nilai ke server sekolah...";
+      statusEl.style.color = "#64748b";
+
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          name: currentState.name,
+          studentClass: currentState.studentClass,
+          session: sessionData.title,
+          correct: correct,
+          wrong: wrong,
+          score: score
+        })
+      })
+      .then(() => {
+        statusEl.textContent = "Rekap nilai berhasil tersimpan ke server sekolah.";
+        statusEl.style.color = "#15803d";
+      })
+      .catch(() => {
+        statusEl.textContent = "Selesai dikerjakan (koneksi server gagal, harap lapor pengawas).";
+        statusEl.style.color = "#b91c1c";
+      });
     }
 
     function reloginNextSession() {
-      // Otomatis arahkan pilihan ke sesi berikutnya
       const select = document.getElementById("sessionSelect");
       select.value = currentState.sessionKey === "literasi" ? "numerasi" : "literasi";
       document.getElementById("tokenInput").value = "";
