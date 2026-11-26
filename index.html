@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CBT - Tes Kemampuan Akademik (TKA)</title>
+  <style>
+    :root {
+      --primary: #1e40af;
+      --primary-hover: #1d4ed8;
+      --secondary: #0f172a;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #cbd5e1;
+      --success: #15803d;
+      --warning: #b45309;
+      --danger: #b91c1c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Header */
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+    header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.3px; }
+    header span { font-size: 0.85rem; opacity: 0.9; }
+
+    /* Container */
+    .container { max-width: 1040px; width: 100%; margin: 24px auto; padding: 0 16px; flex: 1; }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e2e8f0;
+    }
+
+    .hidden { display: none !important; }
+
+    /* Form Login */
+    .login-box { max-width: 460px; margin: 20px auto; }
+    .login-box h2 { margin-bottom: 6px; color: var(--secondary); font-size: 1.35rem; }
+    .login-box p { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.12); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+    .btn-primary { background: var(--primary); color: #fff; width: 100%; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: #f8fafc; }
+    .btn-warning { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { background: #166534; }
+
+    .alert {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      margin-bottom: 14px;
+      background: #fee2e2;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    /* Exam Layout */
+    .exam-topbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 18px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: #dbeafe;
+      color: var(--primary);
+    }
+    .timer-box {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--danger);
+      background: #fef2f2;
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid #fecaca;
+    }
+
+    .exam-grid { display: grid; grid-template-columns: 1fr 270px; gap: 18px; align-items: start; }
+    @media (max-width: 820px) { .exam-grid { grid-template-columns: 1fr; } }
+
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 16px;
+    }
+    .passage {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary);
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 0.94rem;
+      line-height: 1.6;
+    }
+    .question-text { font-size: 1.03rem; line-height: 1.6; margin-bottom: 18px; font-weight: 500; }
+
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .option-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .option-item:hover { background: #f8fafc; border-color: #94a3b8; }
+    .option-item.selected { background: #eff6ff; border-color: var(--primary); }
+    .opt-letter {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .option-item.selected .opt-letter { background: var(--primary); color: #fff; }
+
+    .nav-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 22px;
+      padding-top: 16px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    /* Number Grid */
+    .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+    .num-btn {
+      padding: 8px 0;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.88rem;
+    }
+    .num-btn.active { border: 2px solid var(--primary); }
+    .num-btn.answered { background: var(--success); color: #fff; border-color: var(--success); }
+    .num-btn.doubt { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+
+    .legend { margin-top: 14px; font-size: 0.8rem; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+    /* Result */
+    .result-box { text-align: center; max-width: 560px; margin: 16px auto; }
+    .score-circle {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: #eff6ff;
+      border: 6px solid var(--primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 18px auto;
+    }
+    .score-circle strong { font-size: 2.1rem; color: var(--primary); }
+    .score-circle small { font-size: 0.78rem; color: var(--muted); }
+    .result-table { width: 100%; border-collapse: collapse; margin: 18px 0; text-align: left; font-size: 0.92rem; }
+    .result-table td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+
+    footer { text-align: center; padding: 16px; font-size: 0.82rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>CBT TES KEMAMPUAN AKADEMIK (TKA)</h1>
+      <span>SMP NEGERI 1 CIPEUNDEUY</span>
+    </div>
+    <div id="headerUser" style="font-size:0.88rem; font-weight:600;"></div>
+  </header>
+
+  <div class="container">
+    <!-- HALAMAN LOGIN -->
+    <div id="loginView" class="card login-box">
+      <h2>Login Peserta Ujian</h2>
+      <p>Silakan lengkapi identitas, pilih sesi ujian, dan masukkan token dari pengawas.</p>
+      <div id="loginAlert" class="alert hidden"></div>
+
+      <div class="form-group">
+        <label for="studentName">Nama Lengkap Siswa</label>
+        <input type="text" id="studentName" placeholder="Contoh: Ahmad Fauzi" />
+      </div>
+
+      <div class="form-group">
+        <label for="studentClass">Kelas / Nomor Peserta</label>
+        <input type="text" id="studentClass" placeholder="Contoh: IX-A / 01-0024" />
+      </div>
+
+      <div class="form-group">
+        <label for="sessionSelect">Pilih Sesi Ujian</label>
+        <select id="sessionSelect">
+          <option value="literasi">Sesi 1 — Literasi Membaca (15 Menit)</option>
+          <option value="numerasi">Sesi 2 — Numerasi (15 Menit)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="tokenInput">Token Ujian</label>
+        <input type="text" id="tokenInput" placeholder="Masukkan token (TKA2026)" style="text-transform: uppercase;" />
+      </div>
+
+      <button class="btn btn-primary" onclick="startExam()">Mulai Ujian</button>
+    </div>
+
+    <!-- HALAMAN UJIAN -->
+    <div id="examView" class="hidden">
+      <div class="exam-topbar">
+        <div>
+          <span class="badge" id="sessionTitle">SESI 1: LITERASI</span>
+          <div style="font-size:0.88rem; color:var(--muted); margin-top:4px;" id="participantInfo"></div>
+        </div>
+        <div class="timer-box">Sisa Waktu: <span id="timerDisplay">15:00</span></div>
+      </div>
+
+      <div class="exam-grid">
+        <div class="card">
+          <div class="question-header">
+            <strong id="questionNumberTitle">Soal No. 1</strong>
+            <span style="font-size:0.85rem; color:var(--muted);" id="progressText">Terjawab: 0 / 10</span>
+          </div>
+
+          <div id="passageBox" class="passage hidden"></div>
+          <div id="questionText" class="question-text"></div>
+          <div id="optionsContainer" class="options"></div>
+
+          <div class="nav-buttons">
+            <button class="btn btn-outline" id="prevBtn" onclick="prevQuestion()">← Sebelumnya</button>
+            <button class="btn btn-warning" id="doubtBtn" onclick="toggleDoubt()">Ragu-ragu</button>
+            <button class="btn btn-outline" id="nextBtn" onclick="nextQuestion()">Selanjutnya →</button>
+            <button class="btn btn-success hidden" id="finishBtn" onclick="confirmFinish()">Selesai & Kumpulkan</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <strong style="font-size:0.95rem;">Navigasi Nomor Soal</strong>
+          <div id="numberGrid" class="num-grid"></div>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--success);"></i> Sudah dijawab</span>
+            <span><i class="dot" style="background:#f59e0b;"></i> Ragu-ragu</span>
+            <span><i class="dot" style="background:#fff; border:1px solid var(--border);"></i> Belum dijawab</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HALAMAN HASIL -->
+    <div id="resultView" class="card result-box hidden">
+      <span class="badge" id="resultSessionBadge">HASIL UJIAN</span>
+      <h2 style="margin-top:10px;">Ujian Selesai Dikerjakan</h2>
+      <p style="color:var(--muted); font-size:0.9rem;">Berikut adalah rekap hasil pengerjaan Anda pada sesi ini.</p>
+
+      <div class="score-circle">
+        <strong id="finalScore">0</strong>
+        <small>NILAI AKHIR</small>
+      </div>
+
+      <table class="result-table">
+        <tr><td><strong>Nama Peserta</strong></td><td id="resName">-</td></tr>
+        <tr><td><strong>Kelas / No. Peserta</strong></td><td id="resClass">-</td></tr>
+        <tr><td><strong>Sesi Ujian</strong></td><td id="resSession">-</td></tr>
+        <tr><td><strong>Jawaban Benar</strong></td><td id="resCorrect">-</td></tr>
+        <tr><td><strong>Jawaban Salah / Kosong</strong></td><td id="resWrong">-</td></tr>
+      </table>
+
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn btn-primary" style="width:auto;" onclick="reloginNextSession()">Login Sesi Berikutnya</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © 2026/2027 Aplikasi CBT Mandiri • Tes Kemampuan Akademik
+  </footer>
+
+  <script>
+    // ================= KONFIGURASI TOKEN & BANK SOAL =================
+    const VALID_TOKEN = "TKA2026";
+
+    const BANK_SOAL = {
+      literasi: {
+        title: "Sesi 1 — Literasi Membaca",
+        durationMinutes: 15,
+        questions: [
+          {
+            passage: "Taman bacaan di sudut desa itu awalnya hanya berupa rak kayu sederhana di teras rumah warga. Namun, setiap sore anak-anak berdatangan untuk meminjam buku cerita maupun ensiklopedia bergambar. Kini, warga bergotong royong menambah koleksi buku dan menyediakan sudut diskusi akhir pekan.",
+            q: "Gagasan utama paragraf tersebut adalah ...",
+            options: [
+              "Perkembangan taman bacaan desa berkat antusiasme anak-anak dan gotong royong warga",
+              "Jenis-jenis buku ensiklopedia bergambar yang paling disukai anak-anak desa",
+              "Cara membuat rak kayu sederhana untuk menyimpan koleksi buku di teras rumah",
+              "Jadwal kegiatan diskusi akhir pekan yang wajib diikuti seluruh warga desa"
+            ],
+            answer: 0
+          },
+          {
+            passage: "Penggunaan gawai secara berlebihan sebelum tidur dapat menghambat produksi hormon melatonin yang mengatur siklus tidur alami tubuh. Akibatnya, seseorang menjadi sulit terlelap dan merasa lelah saat bangun di pagi hari.",
+            q: "Berdasarkan teks tersebut, dampak langsung terhambatnya hormon melatonin adalah ...",
+            options: [
+              "Meningkatnya daya konsentrasi saat belajar di malam hari",
+              "Terganggunya siklus tidur alami sehingga sulit terlelap",
+              "Berkurangnya kebutuhan waktu istirahat harian tubuh",
+              "Meningkatnya energi tubuh pada keesokan harinya"
+            ],
+            answer: 1
+          },
+          {
+            passage: "Hutan bakau di pesisir pantai tidak hanya menjadi habitat berbagai jenis kepiting dan ikan kecil, tetapi juga berperan penting memecah gelombang laut sehingga mencegah abrasi daratan.",
+            q: "Makna kata 'abrasi' pada paragraf di atas adalah ...",
+            options: [
+              "Pencemaran air laut akibat limbah rumah tangga",
+              "Pengikisan daratan pantai oleh tenaga gelombang laut",
+              "Penanaman kembali hutan yang gundul di wilayah pesisir",
+              "Perpindahan habitat ikan dari laut dalam ke muara sungai"
+            ],
+            answer: 1
+          },
+          {
+            passage: "Meskipun hujan turun sangat deras sejak pagi, Raka tetap berangkat menuju sekolah lebih awal karena ia bertugas menyiapkan perlengkapan upacara bendera.",
+            q: "Sikap tokoh Raka yang tergambar dalam kalimat tersebut adalah ...",
+            options: [
+              "Ceroboh dan tergesa-gesa",
+              "Disiplin dan bertanggung jawab",
+              "Pendiam dan mudah menyerah",
+              "Sombong dan suka pamer"
+            ],
+            answer: 1
+          },
+          {
+            passage: "Sampah organik rumah tangga seperti sisa sayuran dan kulit buah dapat diolah menjadi pupuk kompos. Selain mengurangi volume sampah yang dibuang ke tempat pembuangan akhir, kompos juga menyuburkan tanaman pekarangan.",
+            q: "Simpulan yang tepat dari bacaan tersebut adalah ...",
+            options: [
+              "Semua jenis sampah rumah tangga harus dibakar agar tidak menumpuk",
+              "Pupuk kompos hanya bisa dibuat menggunakan kulit buah-buahan tertentu",
+              "Pengolahan sampah organik menjadi kompos bermanfaat bagi lingkungan dan tanaman",
+              "Tempat pembuangan akhir sudah tidak menerima sampah sayuran dari warga"
+            ],
+            answer: 2
+          },
+          {
+            passage: "Dalam sebuah poster layanan masyarakat tertulis: 'Satu Pohon Hari Ini, Sejuta Napas untuk Masa Depan.'",
+            q: "Tujuan utama poster tersebut adalah ...",
+            options: [
+              "Menjual bibit pohon keras kepada masyarakat perkotaan",
+              "Mengajak masyarakat menanam pohon demi kelestarian udara di masa depan",
+              "Melarang warga menebang semua jenis tanaman di halaman rumah",
+              "Menjelaskan proses fotosintesis tumbuhan secara ilmiah"
+            ],
+            answer: 1
+          },
+          {
+            passage: "Ani membaca dua artikel tentang energi surya. Artikel A membahas murahnya biaya perawatan panel surya dalam jangka panjang. Artikel B menyoroti tingginya biaya pemasangan awal panel surya bagi rumah tangga.",
+            q: "Perbedaan fokus kedua artikel tersebut terletak pada ...",
+            options: [
+              "Artikel A membahas keuntungan jangka panjang, sedangkan Artikel B membahas kendala biaya awal",
+              "Artikel A menolak energi terbarukan, sedangkan Artikel B mendukung penggunaan batu bara",
+              "Artikel A ditujukan untuk industri besar, sedangkan Artikel B untuk sekolah",
+              "Artikel A dan Artikel B sama-sama membahas cara merakit panel surya sendiri"
+            ],
+            answer: 0
+          },
+          {
+            passage: "Perhatikan kalimat berikut: 'Para hadirin sekalian dimohon untuk segera memasuki ruang aula.'",
+            q: "Perbaikan kalimat tersebut agar menjadi kalimat efektif adalah ...",
+            options: [
+              "Para hadirin dimohon untuk segera memasuki ruang aula.",
+              "Semua para hadirin sekalian dimohon memasuki ruang aula.",
+              "Hadirin sekalian dimohon untuk segera masuk ke dalam aula.",
+              "Para hadirin-hadirin dimohon segera memasuki ruang aula."
+            ],
+            answer: 0
+          },
+          {
+            passage: "Setiap pagi, Pak Darmo menyusuri pematang sawah sambil memeriksa saluran irigasi. Baginya, air yang mengalir lancar adalah kunci keberhasilan panen padi para petani di desanya.",
+            q: "Latar tempat dan waktu pada kutipan cerita tersebut adalah ...",
+            options: [
+              "Di tepi sungai pada siang hari",
+              "Di pematang sawah pada pagi hari",
+              "Di balai desa pada sore hari",
+              "Di halaman rumah pada malam hari"
+            ],
+            answer: 1
+          },
+          {
+            passage: "Literasi digital tidak hanya berarti mampu mengoperasikan gawai, tetapi juga mencakup kecakapan menyaring kebenaran informasi sebelum membagikannya kepada orang lain.",
+            q: "Pernyataan yang sesuai dengan isi teks adalah ...",
+            options: [
+              "Orang yang memiliki gawai canggih pasti memiliki literasi digital yang tinggi",
+              "Informasi di internet boleh langsung dibagikan tanpa perlu diperiksa",
+              "Kemampuan memverifikasi informasi merupakan bagian penting dari literasi digital",
+              "Literasi digital hanya diperlukan oleh pelajar di tingkat perguruan tinggi"
+            ],
+            answer: 2
+          }
+        ]
+      },
+      numerasi: {
+        title: "Sesi 2 — Numerasi",
+        durationMinutes: 15,
+        questions: [
+          {
+            passage: "",
+            q: "Hasil dari $24 + (-15) \\times 3$ adalah ...",
+            options: ["-21", "27", "-69", "69"],
+            answer: 0
+          },
+          {
+            passage: "Sebuah toko buku memberikan diskon 20% untuk semua jenis novel. Dina membeli sebuah novel dengan harga label Rp85.000,00.",
+            q: "Berapa rupiah yang harus dibayar Dina setelah mendapat diskon?",
+            options: ["Rp65.000,00", "Rp68.000,00", "Rp70.000,00", "Rp72.500,00"],
+            answer: 1
+          },
+          {
+            passage: "",
+            q: "Perbandingan kelereng Budi dan Anton adalah $3 : 5$. Jika jumlah kelereng mereka berdua adalah $64$ butir, selisih kelereng mereka adalah ...",
+            options: ["8 butir", "12 butir", "16 butir", "24 butir"],
+            answer: 2
+          },
+          {
+            passage: "Sebuah taman berbentuk persegi panjang memiliki ukuran panjang $18\\text{ m}$ dan lebar $12\\text{ m}$. Di sekeliling taman akan dipasang lampu dengan jarak antar-lampu $3\\text{ m}$.",
+            q: "Banyak lampu yang dibutuhkan di sekeliling taman tersebut adalah ...",
+            options: ["18 buah", "20 buah", "24 buah", "30 buah"],
+            answer: 1
+          },
+          {
+            passage: "",
+            q: "Diketahui pola bilangan: $4, 7, 10, 13, \\dots$ Suku ke-12 dari pola bilangan tersebut adalah ...",
+            options: ["34", "37", "40", "43"],
+            answer: 1
+          },
+          {
+            passage: "Sebuah bak mandi berbentuk balok berukuran panjang $100\\text{ cm}$, lebar $60\\text{ cm}$, dan tinggi $50\\text{ cm}$.",
+            q: "Jika bak tersebut diisi air hingga penuh, berapa liter volume air di dalamnya? ($1\\text{ liter} = 1.000\\text{ cm}^3$)",
+            options: ["210 liter", "250 liter", "300 liter", "350 liter"],
+            answer: 2
+          },
+          {
+            passage: "Nilai ulangan Matematika 5 siswa adalah: $75, 80, 85, 90, 80$.",
+            q: "Rata-rata (mean) nilai kelima siswa tersebut adalah ...",
+            options: ["80", "82", "84", "85"],
+            answer: 1
+          },
+          {
+            passage: "Sebuah mobil menempuh jarak $135\\text{ km}$ dengan kecepatan rata-rata $45\\text{ km/jam}$.",
+            q: "Jika mobil berangkat pukul $07.30$, pada pukul berapa mobil tiba di tujuan?",
+            options: ["09.30", "10.00", "10.30", "11.00"],
+            answer: 2
+          },
+          {
+            passage: "",
+            q: "Nilai $x$ yang memenuhi persamaan $3x - 7 = 14$ adalah ...",
+            options: ["5", "6", "7", "8"],
+            answer: 2
+          },
+          {
+            passage: "Di dalam sebuah kotak terdapat $5$ bola merah, $3$ bola biru, dan $2$ bola kuning.",
+            q: "Jika diambil satu bola secara acak, peluang terambilnya bola berwarna biru adalah ...",
+            options: ["0,2", "0,3", "0,4", "0,5"],
+            answer: 1
+          }
+        ]
+      }
+    };
+
+    // ================= STATE APLIKASI =================
+    let currentState = {
+      name: "",
+      studentClass: "",
+      sessionKey: "literasi",
+      currentIndex: 0,
+      answers: [],
+      doubts: [],
+      timeLeft: 0,
+      timerInterval: null
+    };
+
+    // Bersihkan format LaTeX sederhana agar tampil rapi tanpa library eksternal
+    function formatMathText(str) {
+      return str
+        .replace(/\$([^$]+)\$/g, (_, expr) => {
+          return expr
+            .replace(/\\times/g, "×")
+            .replace(/\\dots/g, "...")
+            .replace(/\\text\{([^}]+)\}/g, "$1")
+            .replace(/\^2/g, "²")
+            .replace(/\^3/g, "³");
+        });
+    }
+
+    function startExam() {
+      const name = document.getElementById("studentName").value.trim();
+      const sClass = document.getElementById("studentClass").value.trim();
+      const sessionKey = document.getElementById("sessionSelect").value;
+      const token = document.getElementById("tokenInput").value.trim().toUpperCase();
+      const alertBox = document.getElementById("loginAlert");
+
+      if (!name || !sClass) {
+        alertBox.textContent = "Harap isi Nama Lengkap dan Kelas / Nomor Peserta terlebih dahulu.";
+        alertBox.classList.remove("hidden");
+        return;
+      }
+
+      if (token !== VALID_TOKEN) {
+        alertBox.textContent = "Token tidak valid! Gunakan token: " + VALID_TOKEN;
+        alertBox.classList.remove("hidden");
+        return;
+      }
+
+      alertBox.classList.add("hidden");
+
+      const sessionData = BANK_SOAL[sessionKey];
+      const totalQ = sessionData.questions.length;
+
+      currentState = {
+        name,
+        studentClass: sClass,
+        sessionKey,
+        currentIndex: 0,
+        answers: new Array(totalQ).fill(null),
+        doubts: new Array(totalQ).fill(false),
+        timeLeft: sessionData.durationMinutes * 60,
+        timerInterval: null
+      };
+
+      document.getElementById("loginView").classList.add("hidden");
+      document.getElementById("resultView").classList.add("hidden");
+      document.getElementById("examView").classList.remove("hidden");
+
+      document.getElementById("headerUser").textContent = name + " (" + sClass + ")";
+      document.getElementById("sessionTitle").textContent = sessionData.title.toUpperCase();
+      document.getElementById("participantInfo").textContent = "Peserta: " + name + " | Kelas: " + sClass;
+
+      renderNumberGrid();
+      renderQuestion();
+      startTimer();
+    }
+
+    function startTimer() {
+      clearInterval(currentState.timerInterval);
+      updateTimerDisplay();
+      currentState.timerInterval = setInterval(() => {
+        currentState.timeLeft--;
+        updateTimerDisplay();
+        if (currentState.timeLeft <= 0) {
+          clearInterval(currentState.timerInterval);
+          alert("Waktu pengerjaan sesi ini telah habis. Jawaban Anda akan dikumpulkan otomatis.");
+          finishExam();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const m = Math.floor(currentState.timeLeft / 60);
+      const s = currentState.timeLeft % 60;
+      document.getElementById("timerDisplay").textContent =
+        String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    }
+
+    function renderQuestion() {
+      const sessionData = BANK_SOAL[currentState.sessionKey];
+      const idx = currentState.currentIndex;
+      const item = sessionData.questions[idx];
+      const totalQ = sessionData.questions.length;
+
+      document.getElementById("questionNumberTitle").textContent = `Soal No. ${idx + 1} dari ${totalQ}`;
+
+      const answeredCount = currentState.answers.filter(a => a !== null).length;
+      document.getElementById("progressText").textContent = `Terjawab: ${answeredCount} / ${totalQ}`;
+
+      const passageBox = document.getElementById("passageBox");
+      if (item.passage && item.passage.trim() !== "") {
+        passageBox.innerHTML = formatMathText(item.passage);
+        passageBox.classList.remove("hidden");
+      } else {
+        passageBox.classList.add("hidden");
+      }
+
+      document.getElementById("questionText").innerHTML = formatMathText(item.q);
+
+      const optionsContainer = document.getElementById("optionsContainer");
+      optionsContainer.innerHTML = "";
+      const letters = ["A", "B", "C", "D"];
+
+      item.options.forEach((optText, optIdx) => {
+        const div = document.createElement("div");
+        div.className = "option-item" + (currentState.answers[idx] === optIdx ? " selected" : "");
+        div.onclick = () => selectOption(optIdx);
+        div.innerHTML = `
+          <div class="opt-letter">${letters[optIdx]}</div>
+          <div style="line-height:1.5;">${formatMathText(optText)}</div>
+        `;
+        optionsContainer.appendChild(div);
+      });
+
+      // Tombol navigasi
+      document.getElementById("prevBtn").disabled = idx === 0;
+      if (idx === totalQ - 1) {
+        document.getElementById("nextBtn").classList.add("hidden");
+        document.getElementById("finishBtn").classList.remove("hidden");
+      } else {
+        document.getElementById("nextBtn").classList.remove("hidden");
+        document.getElementById("finishBtn").classList.add("hidden");
+      }
+
+      updateNumberGrid();
+    }
+
+    function selectOption(optIdx) {
+      currentState.answers[currentState.currentIndex] = optIdx;
+      renderQuestion();
+    }
+
+    function toggleDoubt() {
+      const idx = currentState.currentIndex;
+      currentState.doubts[idx] = !currentState.doubts[idx];
+      updateNumberGrid();
+    }
+
+    function prevQuestion() {
+      if (currentState.currentIndex > 0) {
+        currentState.currentIndex--;
+        renderQuestion();
+      }
+    }
+
+    function nextQuestion() {
+      const totalQ = BANK_SOAL[currentState.sessionKey].questions.length;
+      if (currentState.currentIndex < totalQ - 1) {
+        currentState.currentIndex++;
+        renderQuestion();
+      }
+    }
+
+    function jumpToQuestion(idx) {
+      currentState.currentIndex = idx;
+      renderQuestion();
+    }
+
+    function renderNumberGrid() {
+      const totalQ = BANK_SOAL[currentState.sessionKey].questions.length;
+      const grid = document.getElementById("numberGrid");
+      grid.innerHTML = "";
+      for (let i = 0; i < totalQ; i++) {
+        const btn = document.createElement("button");
+        btn.className = "num-btn";
+        btn.textContent = i + 1;
+        btn.onclick = () => jumpToQuestion(i);
+        grid.appendChild(btn);
+      }
+      updateNumberGrid();
+    }
+
+    function updateNumberGrid() {
+      const buttons = document.getElementById("numberGrid").children;
+      for (let i = 0; i < buttons.length; i++) {
+        buttons[i].className = "num-btn";
+        if (i === currentState.currentIndex) buttons[i].classList.add("active");
+        if (currentState.doubts[i]) {
+          buttons[i].classList.add("doubt");
+        } else if (currentState.answers[i] !== null) {
+          buttons[i].classList.add("answered");
+        }
+      }
+    }
+
+    function confirmFinish() {
+      const unanswered = currentState.answers.filter(a => a === null).length;
+      const msg = unanswered > 0
+        ? `Masih ada ${unanswered} soal yang belum dijawab. Yakin ingin mengumpulkan sekarang?`
+        : "Semua soal sudah dijawab. Kumpulkan jawaban sekarang?";
+      if (confirm(msg)) {
+        finishExam();
+      }
+    }
+
+    function finishExam() {
+      clearInterval(currentState.timerInterval);
+      const sessionData = BANK_SOAL[currentState.sessionKey];
+      const questions = sessionData.questions;
+      let correct = 0;
+
+      questions.forEach((q, idx) => {
+        if (currentState.answers[idx] === q.answer) correct++;
+      });
+
+      const totalQ = questions.length;
+      const score = Math.round((correct / totalQ) * 100);
+
+      document.getElementById("examView").classList.add("hidden");
+      document.getElementById("resultView").classList.remove("hidden");
+
+      document.getElementById("resultSessionBadge").textContent = sessionData.title.toUpperCase();
+      document.getElementById("finalScore").textContent = score;
+      document.getElementById("resName").textContent = currentState.name;
+      document.getElementById("resClass").textContent = currentState.studentClass;
+      document.getElementById("resSession").textContent = sessionData.title;
+      document.getElementById("resCorrect").textContent = `${correct} dari ${totalQ} soal`;
+      document.getElementById("resWrong").textContent = `${totalQ - correct} soal`;
+    }
+
+    function reloginNextSession() {
+      // Otomatis arahkan pilihan ke sesi berikutnya
+      const select = document.getElementById("sessionSelect");
+      select.value = currentState.sessionKey === "literasi" ? "numerasi" : "literasi";
+      document.getElementById("tokenInput").value = "";
+      document.getElementById("resultView").classList.add("hidden");
+      document.getElementById("loginView").classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>
